@@ -1,0 +1,9 @@
+{
+  "name": "local-workspace-management",
+  "private": true,
+  "description": "Localhost dashboard to run allowlisted commands across project folders",
+  "scripts": {
+    "start": "node server.mjs",
+    "start:open": "node server.mjs --open"
+  }
+}

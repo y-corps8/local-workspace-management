@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Workspace overview</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="layout">
+      <header class="topbar">
+        <div class="topbar-brand">
+          <p class="eyebrow">Local workspace</p>
+          <h1>Overview</h1>
+        </div>
+        <section class="health-strip" aria-label="Workspace health" id="health-strip"></section>
+        <div class="topbar-end">
+          <button type="button" class="btn btn-compact" id="edit-setup">Edit setup</button>
+          <div class="meta-line">Updated <span id="generated-at">—</span></div>
+        </div>
+      </header>
+
+      <section aria-label="Last test runs">
+        <h2 class="section-title">Last test runs</h2>
+        <div class="test-grid" id="test-grid"></div>
+      </section>
+
+      <section class="section-projects" aria-label="Projects">
+        <h2 class="section-title">Projects</h2>
+        <div class="project-grid" id="project-grid"></div>
+      </section>
+
+      <section class="log-section" aria-label="Command output">
+        <div class="log-chrome">
+          <div class="log-title">
+            <span class="log-live" aria-hidden="true"></span>
+            <h2>Output</h2>
+            <span id="log-job-label">No command yet</span>
+          </div>
+          <div class="log-actions">
+            <button type="button" class="btn btn-compact" id="log-stop" hidden>Stop</button>
+            <button type="button" class="btn btn-compact" id="log-clear">Clear</button>
+          </div>
+        </div>
+        <div class="log-interactions" id="log-interactions" hidden></div>
+        <div class="job-tabs" id="job-tabs" role="tablist" aria-label="Command jobs"></div>
+        <pre class="log-panel" id="log-panel" tabindex="0"></pre>
+      </section>
+    </div>
+
+    <div class="modal-backdrop" id="confirm-modal" hidden>
+      <div class="modal" role="dialog" aria-modal="true" aria-labelledby="confirm-title">
+        <h3 id="confirm-title">Confirm</h3>
+        <p id="confirm-message"></p>
+        <div class="modal-actions">
+          <button type="button" class="btn" id="confirm-cancel">Cancel</button>
+          <button type="button" class="btn btn-danger" id="confirm-ok">Run</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="setup-backdrop" id="setup-panel" hidden>
+      <div class="setup-sheet" role="dialog" aria-modal="true" aria-labelledby="setup-title">
+        <div class="setup-chrome">
+          <div>
+            <p class="eyebrow" id="setup-eyebrow">First run</p>
+            <h2 id="setup-title">Set up overview</h2>
+          </div>
+          <button type="button" class="btn btn-compact" id="setup-close">Close</button>
+        </div>
+        <p class="setup-lead" id="setup-lead">
+          Point at the folder that holds your projects, then add each repo. You do not need those folders open in the editor.
+        </p>
+        <p class="setup-error" id="setup-error" hidden></p>
+
+        <section id="setup-step-root" class="setup-step">
+          <h3>1. Where are the projects?</h3>
+          <label class="setup-field">
+            <span>Workspace folder</span>
+            <input type="text" id="setup-workspace-root" spellcheck="false" placeholder="." />
+          </label>
+          <p class="setup-hint">
+            Relative to this tool’s folder, an absolute path, or <code>~/...</code>. You do not need those project folders open in the editor.
+          </p>
+          <p class="setup-probe" id="setup-root-status" hidden></p>
+          <div class="setup-field-row">
+            <label class="setup-field setup-field-narrow">
+              <span>Metro port</span>
+              <input type="number" id="setup-metro-port" min="1" max="65535" value="8081" />
+            </label>
+            <label class="setup-field">
+              <span>Expo dev-client scheme</span>
+              <input type="text" id="setup-expo-scheme" spellcheck="false" placeholder="app" />
+            </label>
+          </div>
+          <div class="setup-actions">
+            <button type="button" class="btn" id="setup-check-root">Check folder</button>
+            <button type="button" class="btn btn-primary" id="setup-continue">Continue</button>
+          </div>
+        </section>
+
+        <section id="setup-step-projects" class="setup-step" hidden>
+          <h3>2. Projects</h3>
+          <div class="setup-project-list" id="setup-project-list"></div>
+          <div class="setup-actions setup-actions-list">
+            <button type="button" class="btn" id="setup-add-project">Add a project</button>
+            <button type="button" class="btn" id="setup-back-root">Back</button>
+            <button type="button" class="btn btn-primary" id="setup-save">Save setup</button>
+          </div>
+
+          <div id="setup-project-form" class="setup-project-form" hidden>
+            <h4 id="setup-form-title">Add a project</h4>
+            <label class="setup-field">
+              <span>Path</span>
+              <input type="text" id="setup-path" spellcheck="false" placeholder="bs-app" />
+            </label>
+            <p class="setup-hint">Relative to the workspace folder, absolute, or <code>~/...</code>.</p>
+            <div class="setup-actions">
+              <button type="button" class="btn" id="setup-probe">Probe</button>
+            </div>
+            <p class="setup-probe" id="setup-path-status" hidden></p>
+            <div class="setup-field-row">
+              <label class="setup-field">
+                <span>Id</span>
+                <input type="text" id="setup-id" spellcheck="false" />
+              </label>
+              <label class="setup-field">
+                <span>Name</span>
+                <input type="text" id="setup-name" />
+              </label>
+            </div>
+            <label class="setup-field">
+              <span>Role</span>
+              <input type="text" id="setup-role" placeholder="Expo mobile + web client" />
+            </label>
+            <div class="setup-field-row">
+              <label class="setup-field">
+                <span>Health port (optional)</span>
+                <input type="number" id="setup-health-port" min="1" max="65535" placeholder="8081" />
+              </label>
+              <label class="setup-field">
+                <span>Tests</span>
+                <select id="setup-test-kind">
+                  <option value="jest">Jest</option>
+                  <option value="maven">Maven</option>
+                </select>
+              </label>
+            </div>
+            <p class="setup-hint" id="setup-scripts-hint">Probe the path to list npm scripts and Maven run commands. Check the buttons to show on the dashboard.</p>
+            <div class="setup-scripts" id="setup-scripts"></div>
+            <div class="setup-actions">
+              <button type="button" class="btn" id="setup-cancel-form">Cancel</button>
+              <button type="button" class="btn btn-primary" id="setup-commit-project">Add to list</button>
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <script src="./app.js"></script>
+  </body>
+</html>
