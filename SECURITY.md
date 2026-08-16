@@ -5,7 +5,7 @@
 Report security issues **privately**. Do not open a public GitHub issue.
 
 - Email: **mohityadavv1108@gmail.com**
-- Or use **GitHub Security Advisories** on this repository (Security tab → Report a vulnerability), if that is enabled
+- Or use **GitHub Security Advisories** on this repository (Security tab → Report a vulnerability)
 
 Please include enough detail to reproduce the problem (OS, Node version, steps). Do not attach a live `workspace.json` with real project paths; redact or describe the setup instead.
 
