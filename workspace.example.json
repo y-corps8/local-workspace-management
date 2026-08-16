@@ -1,0 +1,136 @@
+{
+  "showTestOverview": false,
+  "projects": [
+    {
+      "id": "overview",
+      "name": "Overview tool",
+      "description": "This repo (sample)",
+      "path": ".",
+      "ports": [4174],
+      "testKind": "jest",
+      "health": {
+        "stack": "Overview",
+        "port": 4174
+      },
+      "commands": [
+        {
+          "script": "sleep",
+          "group": "run",
+          "label": "sleep",
+          "hint": "Long-running sample — try Stop.",
+          "longRunning": true,
+          "argv": ["sleep", "30"]
+        },
+        {
+          "script": "echo",
+          "group": "tools",
+          "label": "echo",
+          "hint": "Prints a line in Output.",
+          "argv": ["echo", "Hello from overview"]
+        },
+        {
+          "script": "confirm",
+          "group": "tools",
+          "label": "confirm",
+          "argv": [
+            "node",
+            "-e",
+            "process.stdout.write('Continue? (y/N) ');process.stdin.resume();process.stdin.once('data',(d)=>{process.stdout.write('\\n'+String(d).trim()+'\\n');process.exit(0);})"
+          ]
+        },
+        {
+          "script": "fmt",
+          "group": "lint",
+          "label": "lint",
+          "hint": "Custom group sample.",
+          "argv": ["echo", "lint group"]
+        }
+      ]
+    },
+    {
+      "id": "mobile",
+      "name": "Mobile app",
+      "description": "Expo app",
+      "path": "~/Projects/mobile-app",
+      "ports": [8081],
+      "testKind": "jest",
+      "expoDevClientScheme": "app",
+      "health": {
+        "stack": "Expo",
+        "port": 8081
+      },
+      "commands": [
+        {
+          "script": "start",
+          "group": "run",
+          "label": "start",
+          "longRunning": true,
+          "interactions": "expo"
+        },
+        {
+          "script": "test",
+          "group": "test",
+          "label": "test",
+          "jestJson": true
+        },
+        {
+          "script": "lint",
+          "group": "tools",
+          "label": "lint"
+        }
+      ]
+    },
+    {
+      "id": "api",
+      "name": "API",
+      "description": "Spring API",
+      "path": "~/Projects/api",
+      "ports": [8080],
+      "testKind": "maven",
+      "health": {
+        "stack": "Spring",
+        "port": 8080
+      },
+      "commands": [
+        {
+          "script": "spring-boot:run",
+          "group": "run",
+          "label": "run",
+          "longRunning": true,
+          "argv": ["./mvnw", "spring-boot:run"]
+        },
+        {
+          "script": "test",
+          "group": "test",
+          "label": "test",
+          "argv": ["./mvnw", "test"]
+        }
+      ]
+    },
+    {
+      "id": "db",
+      "name": "Database",
+      "description": "Database",
+      "path": "~/Projects/db",
+      "ports": [5432],
+      "testKind": "jest",
+      "commands": [
+        {
+          "script": "migrate",
+          "group": "database",
+          "label": "migrate",
+          "argv": ["echo", "migrate"]
+        },
+        {
+          "script": "seed",
+          "group": "seed",
+          "label": "seed",
+          "destructive": true,
+          "confirmTitle": "Seed the database?",
+          "confirmMessage": "This sample would reset local seed data.",
+          "argv": ["echo", "seed"]
+        }
+      ]
+    }
+  ]
+}

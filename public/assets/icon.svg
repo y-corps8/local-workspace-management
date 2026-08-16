@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Workspace overview">
+  <rect width="512" height="512" rx="96" fill="#0c0c0a"/>
+  <rect x="68" y="84" width="376" height="344" rx="32" fill="#0a0a08" stroke="#2a2a24" stroke-width="8"/>
+  <clipPath id="win">
+    <rect x="68" y="84" width="376" height="344" rx="32"/>
+  </clipPath>
+  <g clip-path="url(#win)">
+    <rect x="68" y="84" width="376" height="64" fill="#161614"/>
+    <rect x="68" y="146" width="376" height="6" fill="#2a2a24"/>
+  </g>
+  <circle cx="112" cy="116" r="12" fill="#e85d5d"/>
+  <circle cx="148" cy="116" r="12" fill="#e0b44a"/>
+  <circle cx="184" cy="116" r="12" fill="#3dba7a"/>
+  <path d="M196 236 L254 288 L196 340" fill="none" stroke="#d4a054" stroke-width="22" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect x="278" y="262" width="38" height="52" rx="6" fill="#d4a054"/>
+</svg>

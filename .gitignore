@@ -1,0 +1,9 @@
+node_modules/
+workspace.json
+.cache/
+.workspace.*.tmp
+.DS_Store
+Thumbs.db
+*.log
+__pycache__/
+*.pyc

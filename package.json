@@ -1,0 +1,15 @@
+{
+  "name": "local-workspace-management",
+  "private": true,
+  "license": "MIT",
+  "description": "Localhost dashboard to run allowlisted commands across project folders",
+  "engines": {
+    "node": ">=20.6.0"
+  },
+  "scripts": {
+    "start": "node src/server.mjs",
+    "start:browser": "node src/server.mjs --browser",
+    "start:window": "node src/server.mjs --window",
+    "test": "node --import ./test/preload.mjs --test test/*.test.mjs"
+  }
+}

@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#0c0c0a" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Overview" />
+    <title>Workspace overview</title>
+    <script>
+      try {
+        var theme = localStorage.getItem("overview.theme");
+        if (theme === "light" || theme === "dark") {
+          document.documentElement.dataset.theme = theme;
+          document.documentElement.style.colorScheme = theme;
+          if (theme === "light") {
+            var themeColor = document.querySelector('meta[name="theme-color"]');
+            if (themeColor) themeColor.content = "#f6f3eb";
+          }
+        }
+      } catch (e) {}
+    </script>
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="icon" href="./assets/icon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="./assets/apple-touch-icon.png" />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="layout">
+      <header class="topbar" aria-label="Local workspace overview">
+        <div class="topbar-brand">
+          <p class="eyebrow">Local workspace</p>
+          <h1>Overview</h1>
+        </div>
+        <section class="health-strip" aria-label="Workspace health" id="health-strip" title="Green while a long-running command from this dashboard is running, or if the port was open on the last check. Not polled live."></section>
+        <div class="topbar-end">
+          <span class="health-checked" id="health-checked" hidden></span>
+          <span class="cmd-wrap topbar-settings-wrap">
+            <button type="button" class="btn btn-icon" id="edit-setup" aria-label="Settings">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+                <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
+                <circle cx="12" cy="12" r="3" />
+              </svg>
+            </button>
+            <div class="hover-tip" role="tooltip">Settings</div>
+          </span>
+          <span class="cmd-wrap topbar-refresh-wrap" id="health-refresh-wrap" hidden>
+            <button type="button" class="btn btn-icon" id="health-refresh" aria-label="Refresh overview status">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+                <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" />
+                <path d="M21 3v5h-5" />
+                <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" />
+                <path d="M8 16H3v5" />
+              </svg>
+            </button>
+            <div class="hover-tip" role="tooltip">
+              Checks health pills and running status once. Updates the overview from that check — not polled live.
+            </div>
+          </span>
+        </div>
+      </header>
+
+      <div class="workspace-main">
+        <section aria-label="Last test runs" id="test-overview" hidden>
+          <h2 class="section-title">Last test runs</h2>
+          <div class="test-grid" id="test-grid"></div>
+        </section>
+
+        <section class="section-projects" aria-label="Projects">
+          <div class="section-head">
+            <h2 class="section-title">Projects</h2>
+            <button type="button" class="btn btn-compact" id="add-project" hidden>Add project</button>
+          </div>
+          <div class="project-grid" id="project-grid"></div>
+          <div class="projects-empty" id="projects-empty" hidden>
+            <p class="projects-empty-title" id="projects-empty-title">No projects yet</p>
+            <p class="projects-empty-copy" id="projects-empty-copy">Add a repo to run allowlisted commands from this dashboard.</p>
+            <button type="button" class="btn btn-primary" id="add-project-empty">Add project</button>
+          </div>
+        </section>
+      </div>
+
+      <section class="log-section is-collapsed" aria-label="Command console">
+        <div class="log-resize" id="log-resize" role="separator" aria-orientation="horizontal" aria-label="Resize console" tabindex="0"></div>
+        <div class="log-chrome">
+          <div class="log-title">
+            <span class="log-live" aria-hidden="true"></span>
+            <h2>Console</h2>
+          </div>
+          <div class="log-chrome-end">
+            <label class="log-filter-field">
+              <span class="visually-hidden">Filter logs</span>
+              <input type="search" id="log-filter" placeholder="Filter logs" spellcheck="false" />
+            </label>
+            <button type="button" class="btn btn-compact" id="log-stop-all" hidden>Stop all</button>
+            <button type="button" class="btn btn-icon" id="log-collapse" aria-expanded="false" aria-label="Show console">
+              <svg viewBox="0 0 16 16" aria-hidden="true">
+                <path d="M4 6.5l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+            </button>
+          </div>
+        </div>
+        <div class="job-tabs" id="job-tabs" role="tablist" aria-label="Command jobs"></div>
+        <div class="log-output" id="log-output">
+          <pre class="log-panel" id="log-panel" tabindex="0"></pre>
+          <div class="log-prompt-overlay" id="log-prompt-overlay" hidden>
+            <div class="log-prompt-card" role="dialog" aria-modal="false" aria-labelledby="log-prompt-question">
+              <p class="log-prompt-question" id="log-prompt-question"></p>
+              <div class="log-prompt-actions" id="log-prompt-actions"></div>
+            </div>
+          </div>
+        </div>
+        <div class="log-toolbar" id="log-toolbar" hidden>
+          <div class="log-actions">
+            <button type="button" class="btn btn-compact" id="log-stop" hidden>Stop</button>
+            <button type="button" class="btn btn-compact" id="log-restart" hidden>Restart</button>
+            <button type="button" class="btn btn-compact" id="log-clear">Clear</button>
+          </div>
+          <div class="log-interactions" id="log-interactions" hidden></div>
+        </div>
+      </section>
+    </div>
+
+    <div class="modal-backdrop" id="confirm-modal" hidden>
+      <div class="modal" role="dialog" aria-modal="true" aria-labelledby="confirm-title">
+        <h3 id="confirm-title">Confirm</h3>
+        <p id="confirm-message"></p>
+        <div class="modal-actions">
+          <button type="button" class="btn" id="confirm-cancel">Cancel</button>
+          <button type="button" class="btn btn-danger" id="confirm-ok">Run</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="setup-backdrop" id="setup-panel" hidden>
+      <div class="setup-sheet" role="dialog" aria-modal="true" aria-labelledby="setup-title">
+        <div class="setup-chrome">
+          <h2 id="setup-title">Add a project</h2>
+          <button type="button" class="btn btn-compact" id="setup-close">Close</button>
+        </div>
+        <p class="setup-lead" id="setup-lead">
+          Add each repo by folder path, then click Probe. You do not need those folders open in the editor.
+        </p>
+        <p class="setup-error" id="setup-error" hidden></p>
+
+        <section id="setup-step-root" class="setup-step">
+          <div id="setup-appearance-row">
+            <p class="setup-block-label">Appearance</p>
+            <div class="setup-theme-toggle" role="group" aria-label="Theme">
+              <button type="button" class="btn btn-compact" id="setup-theme-light" aria-pressed="false">Light</button>
+              <button type="button" class="btn btn-compact" id="setup-theme-dark" aria-pressed="true">Dark</button>
+            </div>
+          </div>
+          <div id="setup-test-overview-row" hidden>
+            <label class="setup-check">
+              <input type="checkbox" id="setup-show-test-overview" />
+              Show last test runs
+            </label>
+            <p class="setup-hint">
+              Optional. Pass and coverage cards from Jest or Maven artifacts. Skip this unless you want the test overview.
+            </p>
+          </div>
+        </section>
+
+        <section id="setup-step-projects" class="setup-step">
+          <div id="setup-project-form" class="setup-project-form" hidden>
+            <h4 id="setup-form-title">Add a project</h4>
+
+            <div class="setup-block">
+              <p class="setup-block-label">Folder</p>
+              <label class="setup-field">
+                <span>Path</span>
+                <div class="setup-input-row">
+                  <input type="text" id="setup-path" spellcheck="false" placeholder="~/Projects/my-app" />
+                  <button type="button" class="btn" id="setup-browse-path">Browse</button>
+                  <button type="button" class="btn" id="setup-probe">Probe</button>
+                </div>
+              </label>
+              <p class="setup-hint">Absolute path or <code>~/...</code>. Browse or paste, then <strong>Probe</strong>. Every command on this project <strong>starts in this folder</strong>. A script can still change directory or call another path itself; the dashboard always launches from here.</p>
+              <p class="setup-probe" id="setup-path-status" hidden></p>
+            </div>
+
+            <div class="setup-block">
+              <p class="setup-block-label">Identity</p>
+              <div class="setup-field-row setup-identity-row">
+                <label class="setup-field setup-field-name">
+                  <span>Name</span>
+                  <input type="text" id="setup-name" placeholder="My app" />
+                </label>
+                <label class="setup-field">
+                  <span>Id</span>
+                  <input type="text" id="setup-id" spellcheck="false" placeholder="my-app" />
+                </label>
+              </div>
+              <p class="setup-hint">Name can be any display text. Id is the slug for command ids; leave it blank to generate from the name.</p>
+              <label class="setup-field">
+                <span>Description</span>
+                <input type="text" id="setup-description" maxlength="50" placeholder="Expo app and API" />
+              </label>
+              <p class="setup-hint">Short line under the project name. At most 50 characters.</p>
+            </div>
+
+            <div class="setup-block">
+              <p class="setup-block-label">Commands</p>
+              <p class="setup-hint" id="setup-scripts-hint">Probe the path to list npm scripts and Maven run commands. Check the buttons to show. Only groups that have scripts appear. Type a group slug on each row (run, tools, lint, …). After Probe, Add custom command for quoted argv. Check Destructive to confirm before run.</p>
+              <p class="setup-probe is-error" id="setup-no-pkg" hidden>
+                No package.json in this folder. Recommended: create one here, or Browse a Node project that has one. You can still add custom commands below.
+              </p>
+              <div class="setup-scripts" id="setup-scripts"></div>
+              <div id="setup-add-custom-wrap" hidden>
+                <button type="button" class="btn" id="setup-add-custom">Add custom command</button>
+                <p class="setup-hint">Button name and quoted command. Add more than one. Shown after Probe, with or without package.json. Editing a name does not change the command id.</p>
+              </div>
+            </div>
+
+            <div class="setup-block">
+              <p class="setup-block-label">Optional</p>
+              <div class="setup-field-row">
+                <label class="setup-field">
+                  <span>Health port (optional)</span>
+                  <input type="number" id="setup-health-port" min="1" max="65535" placeholder="8081" />
+                </label>
+                <label class="setup-field" id="setup-test-kind-field" hidden>
+                  <span>Tests</span>
+                  <select id="setup-test-kind">
+                    <option value="jest">Jest</option>
+                    <option value="maven">Maven</option>
+                  </select>
+                </label>
+              </div>
+              <p class="setup-hint">Optional TCP check for the top health strip. Leave blank if you do not want a pill.</p>
+            </div>
+
+            <div class="setup-actions setup-form-actions">
+              <button type="button" class="btn" id="setup-cancel-form">Cancel</button>
+              <button type="button" class="btn btn-primary" id="setup-commit-project" disabled>Add Project</button>
+            </div>
+          </div>
+
+          <div class="setup-projects-rest" id="setup-projects-rest">
+            <div class="setup-project-list" id="setup-project-list"></div>
+            <div class="setup-actions setup-actions-list">
+              <button type="button" class="btn" id="setup-add-project">Add a project</button>
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <script src="./app.js"></script>
+  </body>
+</html>
