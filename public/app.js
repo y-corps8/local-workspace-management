@@ -77,6 +77,8 @@ let stickToBottom = true;
 /** Skip full redraw while a drag is in progress (including persist). */
 let isDragging = false;
 let persistDrag = false;
+const pendingLogEntries = [];
+let logPaintFrame = 0;
 const CONSOLE_HEIGHT_KEY = "overview.consoleHeight";
 const CONSOLE_COLLAPSED_KEY = "overview.consoleCollapsed";
 const THEME_KEY = "overview.theme";
@@ -297,6 +299,14 @@ function commandById(id) {
 
 function jobById(id) {
   return statusData?.jobs?.find((job) => job.id === id) ?? null;
+}
+
+function runningIdsKey(repoId) {
+  return (statusData?.jobs ?? [])
+    .filter((job) => job.repo === repoId && job.status === "running")
+    .map((job) => job.id)
+    .sort()
+    .join("\n");
 }
 
 function syncRepoRunningFromJobs() {
@@ -665,6 +675,7 @@ function dismissJobTab(id) {
     return;
   }
   selectedJobId = null;
+  pendingLogEntries.length = 0;
   logPanel.replaceChildren();
   lastInteractionKey = "";
   lastPromptKey = "";
@@ -741,6 +752,7 @@ function updateLogChrome() {
       loadLogs(next.id);
     } else {
       selectedJobId = null;
+      pendingLogEntries.length = 0;
       logPanel.replaceChildren();
       lastInteractionKey = "";
       lastPromptKey = "";
@@ -770,6 +782,7 @@ function toggleOutputCollapsed() {
   persistConsoleCollapsed(outputCollapsed);
   consoleDefaultApplied = true;
   applyOutputCollapsed();
+  if (!outputCollapsed && selectedJobId) loadLogs(selectedJobId);
 }
 
 function syncConsoleCollapsedDefault() {
@@ -839,17 +852,10 @@ function logLineClass(stream, text) {
   return "log-line";
 }
 
-function appendLogLine(stream, text, { at, replace, live } = {}) {
-  const last = logPanel.lastElementChild;
-  if (last?.dataset.live === "1") {
-    last.remove();
-  }
-  if (replace && !live && logPanel.lastElementChild) {
-    logPanel.lastElementChild.remove();
-  }
+function createLogLineEl(stream, text, { at, live } = {}) {
   const line = document.createElement("div");
   line.className = logLineClass(stream, text);
-  const body = text.endsWith("\n") ? text.slice(0, -1) : text;
+  const body = String(text).endsWith("\n") ? String(text).slice(0, -1) : String(text);
   line.dataset.logText = body;
   line.hidden = !logLineMatchesFilter(body);
   const time = formatLogTime(at);
@@ -862,10 +868,68 @@ function appendLogLine(stream, text, { at, replace, live } = {}) {
     line.textContent = `${body}\n`;
   }
   if (live) line.dataset.live = "1";
-  logPanel.appendChild(line);
-  if (stickToBottom) {
-    logPanel.scrollTop = logPanel.scrollHeight;
+  return line;
+}
+
+function scheduleLogPaint() {
+  if (logPaintFrame) return;
+  logPaintFrame = requestAnimationFrame(flushLogPaint);
+}
+
+function flushLogPaint() {
+  logPaintFrame = 0;
+  if (outputCollapsed) {
+    pendingLogEntries.length = 0;
+    return;
   }
+  if (!pendingLogEntries.length || !logPanel) return;
+  const batch = pendingLogEntries.splice(0);
+  const fragment = document.createDocumentFragment();
+  let last = logPanel.lastElementChild;
+
+  function dropLast() {
+    if (last && last.parentNode === fragment) {
+      fragment.removeChild(last);
+      last = fragment.lastElementChild || logPanel.lastElementChild;
+      return;
+    }
+    if (last && last.parentNode === logPanel) {
+      last.remove();
+      last = logPanel.lastElementChild;
+    }
+  }
+
+  for (const entry of batch) {
+    if (entry?.text == null) continue;
+    if (last?.dataset?.live === "1") dropLast();
+    if (entry.replace && !entry.live && last) dropLast();
+    const line = createLogLineEl(entry.stream, entry.text, entry);
+    fragment.appendChild(line);
+    last = line;
+  }
+  if (fragment.childNodes.length) logPanel.appendChild(fragment);
+  if (stickToBottom) logPanel.scrollTop = logPanel.scrollHeight;
+}
+
+function appendLogLine(stream, text, { at, replace, live } = {}) {
+  if (outputCollapsed) return;
+  pendingLogEntries.push({ stream, text, at, replace, live });
+  scheduleLogPaint();
+}
+
+function appendLogLines(items) {
+  if (outputCollapsed || !items?.length) return;
+  for (const item of items) {
+    if (item?.text == null) continue;
+    pendingLogEntries.push(item);
+  }
+  scheduleLogPaint();
+}
+
+function logItemsFromPayload(entry) {
+  if (Array.isArray(entry.lines) && entry.lines.length) return entry.lines;
+  if (entry.text != null) return [entry];
+  return [];
 }
 
 function render() {
@@ -895,13 +959,18 @@ async function loadLogs(id) {
   const res = await fetch(`/api/logs/${encodeURIComponent(id)}`);
   if (!res.ok) return;
   const data = await res.json();
+  pendingLogEntries.length = 0;
+  if (logPaintFrame) {
+    cancelAnimationFrame(logPaintFrame);
+    logPaintFrame = 0;
+  }
   logPanel.replaceChildren();
-  for (const entry of data.logs ?? []) {
-    appendLogLine(entry.stream, entry.text, { at: entry.at, replace: entry.replace });
-  }
+  const items = [...(data.logs ?? [])];
   if (data.partial) {
-    appendLogLine("stdout", data.partial, { live: true });
+    items.push({ stream: "stdout", text: data.partial, live: true });
   }
+  appendLogLines(items);
+  flushLogPaint();
   if (data.prompt && selectedJobId) {
     const job = jobById(selectedJobId);
     if (job) job.prompt = data.prompt;
@@ -978,6 +1047,7 @@ async function runCommand(id) {
     return;
   }
   selectedJobId = id;
+  pendingLogEntries.length = 0;
   logPanel.replaceChildren();
   stickToBottom = true;
   expandOutput();
@@ -1234,43 +1304,66 @@ function bindConsoleResize() {
   if (storedHeight) applyConsoleHeight(storedHeight);
 
   let dragging = false;
+  let startY = 0;
+  let startHeight = 0;
 
-  const onMove = (event) => {
-    if (!dragging) return;
-    applyConsoleHeight(logSection.getBoundingClientRect().bottom - event.clientY);
-  };
+  const currentHeight = () =>
+    Number.parseFloat(layoutEl.style.getPropertyValue("--console-height")) ||
+    logSection.getBoundingClientRect().height;
 
-  const onUp = (event) => {
+  const stopResize = (event) => {
     if (!dragging) return;
     dragging = false;
     layoutEl.classList.remove("is-resizing-console");
-    try {
-      logResize.releasePointerCapture(event.pointerId);
-    } catch {
-      // capture already released
+    window.removeEventListener("pointermove", onMove);
+    window.removeEventListener("pointerup", onUp);
+    window.removeEventListener("pointercancel", onUp);
+    if (event?.pointerId != null) {
+      try {
+        logResize.releasePointerCapture(event.pointerId);
+      } catch {
+        // capture already released
+      }
     }
     const height = Number.parseFloat(layoutEl.style.getPropertyValue("--console-height"));
     if (Number.isFinite(height)) persistConsoleHeight(height);
   };
 
+  const onMove = (event) => {
+    if (!dragging) return;
+    if (event.buttons !== 1) {
+      stopResize(event);
+      return;
+    }
+    applyConsoleHeight(startHeight + (startY - event.clientY));
+  };
+
+  const onUp = (event) => {
+    stopResize(event);
+  };
+
   logResize.addEventListener("pointerdown", (event) => {
     if (outputCollapsed || event.button !== 0) return;
     dragging = true;
+    startY = event.clientY;
+    startHeight = currentHeight();
     layoutEl.classList.add("is-resizing-console");
-    logResize.setPointerCapture(event.pointerId);
+    try {
+      logResize.setPointerCapture(event.pointerId);
+    } catch {
+      // WebView may omit capture; window listeners still end the drag
+    }
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
+    window.addEventListener("pointercancel", onUp);
     event.preventDefault();
   });
-  logResize.addEventListener("pointermove", onMove);
-  logResize.addEventListener("pointerup", onUp);
-  logResize.addEventListener("pointercancel", onUp);
+  logResize.addEventListener("lostpointercapture", onUp);
   logResize.addEventListener("keydown", (event) => {
     if (outputCollapsed) return;
     if (event.key !== "ArrowUp" && event.key !== "ArrowDown") return;
     event.preventDefault();
-    const current =
-      Number.parseFloat(layoutEl.style.getPropertyValue("--console-height")) ||
-      logSection.getBoundingClientRect().height;
-    applyConsoleHeight(current + (event.key === "ArrowUp" ? 24 : -24), true);
+    applyConsoleHeight(currentHeight() + (event.key === "ArrowUp" ? 24 : -24), true);
   });
 
   window.addEventListener("resize", () => {
@@ -1298,6 +1391,7 @@ function handleStdinClick(event) {
 logPromptActions?.addEventListener("click", handleStdinClick);
 
 logClear.addEventListener("click", async () => {
+  pendingLogEntries.length = 0;
   logPanel.replaceChildren();
   if (selectedJobId) {
     await postJson("/api/logs/clear", { id: selectedJobId }, { quiet: true });
@@ -2342,6 +2436,7 @@ function connectEvents() {
   source.addEventListener("job", (event) => {
     const job = JSON.parse(event.data);
     if (!statusData) return;
+    const prevRunning = runningIdsKey(job.repo);
     const jobs = statusData.jobs ?? [];
     const index = jobs.findIndex((item) => item.id === job.id);
     if (index >= 0) jobs[index] = job;
@@ -2349,7 +2444,7 @@ function connectEvents() {
     statusData.jobs = jobs;
     syncRepoRunningFromJobs();
     renderHealth();
-    if (!isDragging) renderProjects();
+    if (!isDragging && prevRunning !== runningIdsKey(job.repo)) renderProjects();
     updateLogChrome();
   });
   source.addEventListener("health", (event) => {
@@ -2361,16 +2456,10 @@ function connectEvents() {
   });
   source.addEventListener("log", (event) => {
     const entry = JSON.parse(event.data);
-    if (entry.id !== selectedJobId) {
-      const incoming = jobById(entry.id);
-      if (!selectedJobId && incoming?.status === "running") {
-        selectedJobId = entry.id;
-        updateLogChrome();
-      } else return;
-    }
-    if (selectedJobId === entry.id) {
-      appendLogLine(entry.stream, entry.text, { at: entry.at, replace: entry.replace, live: entry.live });
-    }
+    if (!entry?.id) return;
+    if (dismissedJobIds.has(entry.id)) return;
+    if (entry.id !== selectedJobId) return;
+    appendLogLines(logItemsFromPayload(entry));
   });
   source.onerror = () => {
     // EventSource reconnects automatically

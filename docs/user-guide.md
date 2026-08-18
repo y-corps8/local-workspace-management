@@ -63,7 +63,7 @@ Red buttons ask you to confirm first: **Cancel** or **Run**.
 
 ## 6. Console
 
-Click the Console chevron to expand it. Drag the handle above Console to resize. While it is open, **Filter logs** is on the title row.
+Click the Console chevron to expand it. Drag the handle above Console to resize — height follows only while you hold the pointer; it stays put when you release. While it is open, **Filter logs** is on the title row. Collapsing Console pauses painting (commands keep running); expand reloads the current job’s log.
 
 Each run gets a tab (`Project · command`). Switch tabs to change which log you are reading. **Clear** clears the current log. Close a tab with **×**.
 

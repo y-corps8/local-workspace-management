@@ -34,7 +34,7 @@ A 15s timer only rewrites the “Checked … ago” string from `generatedAt`. I
 
 ### Console
 
-Job tabs, log stream (`replace` / `live` for progress), prompt overlay (`job.prompt`) with parsed buttons (`POST /api/stdin`), Expo actions (`POST /api/interact`). Resize: drag `#log-resize` or ArrowUp / ArrowDown. Filter is only on the title row while expanded.
+Job tabs, log stream (`replace` / `live` for progress, including batched `{ lines }`), prompt overlay (`job.prompt`) with parsed buttons (`POST /api/stdin`), Expo actions (`POST /api/interact`). Resize: press `#log-resize`, drag, release to lock height (window `pointermove` / `pointerup`); ArrowUp / ArrowDown on the focused handle. Filter is only on the title row while expanded. Collapsed Console skips log paints; expand calls `loadLogs`. Log lines are applied in one animation frame. Dismissed jobs and a null selected tab do not auto-select from `log` events.
 
 ### API helpers
 
@@ -67,9 +67,9 @@ Job tabs, log stream (`replace` / `live` for progress), prompt overlay (`job.pro
 | Event | Client |
 |-------|--------|
 | `status` | Replace `statusData`, `render()` (skipped while dragging) |
-| `job` | Patch that job; refresh pills + chrome |
+| `job` | Patch that job; refresh pills + chrome; `renderProjects` only if that repo’s running set changed |
 | `health` | Patch `statusData.health` |
-| `log` | Append if it is the selected job |
+| `log` | Append if it is the selected, non-dismissed job (`lines` array or a single line). Skip when Console is collapsed |
 
 `EventSource` reconnects on error. Failed POSTs append a stderr-looking line unless `{ quiet: true }` (Expo actions).
 

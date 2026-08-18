@@ -19,7 +19,7 @@ Detect blocking choice / confirm / press-enter prompts from recent job log text.
 
 ## How it works
 
-Scans the last completed lines plus `job.partial`. Recognizes Inquirer-style lists, numbered menus, y/n tails, and “Press Enter / Return / any key” waits. Ignores Expo “press r” help and stack frames. Idle servers with no matching log line are not treated as waiting.
+Scans the last completed lines plus unfinished stdout/stderr (`job.partials`). Recognizes Inquirer-style lists, numbered menus, y/n tails, and “Press Enter / Return / any key” waits. Ignores Expo “press r” help and stack frames. Idle servers with no matching log line are not treated as waiting.
 
 `publicPrompt` is what goes on `publicJob`. The UI POSTs `option.value` via `/api/stdin` from the Console overlay only.
 
