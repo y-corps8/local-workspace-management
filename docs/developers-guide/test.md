@@ -17,9 +17,9 @@ Sets `OVERVIEW_SKIP_WORKSPACE_LOAD=1` before any test file imports [`src/command
 | [`commands.test.mjs`](../../test/commands.test.mjs) | [commands.mjs](src/commands.md) | Duplicate project/command ids rejected; unique scripts accepted; custom `argv` available without `package.json`; package-manager commands need the script key; watch ignores null filename and `.workspace.*.tmp` |
 | [`package-manager.test.mjs`](../../test/package-manager.test.mjs) | [package-manager.mjs](src/package-manager.md) | `packageManager` field vs lockfiles; argv per manager; `guessJestJson`; Windows `.cmd` / `bun.exe` |
 | [`env-file.test.mjs`](../../test/env-file.test.mjs) | [env-file.mjs](src/env-file.md) | Comments, `export`, quotes, inline comments; PATH append |
-| [`job-logs.test.mjs`](../../test/job-logs.test.mjs) | [job-logs.mjs](src/job-logs.md) | Newlines, partial buffer, CR replace vs CRLF, `MAX_PARTIAL` |
+| [`job-logs.test.mjs`](../../test/job-logs.test.mjs) | [job-logs.mjs](src/job-logs.md) | Newlines, partial buffer, CR replace vs CRLF, `MAX_PARTIAL`, per-stream buffers, `compactLogBatch`, `createLogBatcher` flush/clear |
 | [`metro.test.mjs`](../../test/metro.test.mjs) | [metro.mjs](src/metro.md) | Localhost URL, `exp://`, busy-port; ignores stack-trace URLs |
-| [`prompt.test.mjs`](../../test/prompt.test.mjs) | [prompt.mjs](src/prompt.md) | Prisma/npm/inquirer/numbered lists; ANSI; ignores Expo help and free-text; `publicPrompt` caps |
+| [`prompt.test.mjs`](../../test/prompt.test.mjs) | [prompt.mjs](src/prompt.md) | Prisma/npm/inquirer/numbered lists; ANSI; ignores Expo help, free-text, and npm/Gradle `>` logs; `publicPrompt` caps |
 | [`origin.test.mjs`](../../test/origin.test.mjs) | [origin.mjs](src/origin.md) | Missing origin and loopback `:4174` allowed; other hosts/ports rejected |
 | [`open-external.test.mjs`](../../test/open-external.test.mjs) | [open-external.mjs](src/open-external.md) | `open` / `xdg-open` / `explorer` / `cmd start` |
 | [`sse.test.mjs`](../../test/sse.test.mjs) | [sse.mjs](src/sse.md) | Frame format; dead clients dropped |

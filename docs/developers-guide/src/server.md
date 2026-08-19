@@ -44,7 +44,7 @@ In-memory `Map` keyed by command id (one running copy per id). Spawn is `detache
 POST /api/run { id }
   → COMMAND_BY_ID + commandAvailability
   → resolveArgv → spawn in repo.root with spawnEnv()
-  → stdout/stderr → splitLogChunk → SSE log
+  → stdout/stderr → applyStreamChunk → job.logs + log batcher → SSE `log` `{ id, lines }`
   → noteMetroPort / refreshJobPrompt
   → close → finalizeJob
        → kind === "test": snapshot + saveTestSnapshot
@@ -62,7 +62,7 @@ POST /api/run { id }
 
 `spawnEnv` prepends Homebrew / `/usr/local/bin` / `~/.local/bin` to PATH, then [applyEnvFile](env-file.md) so a project `.env` **appends** PATH instead of replacing it.
 
-Limits: 4000 log lines, 50 finished jobs, 300ms prompt debounce, 64 KiB JSON body (256 KiB for `PUT /api/workspace`).
+Limits: 4000 log lines, 50 finished jobs, 300ms prompt debounce, ~80ms log SSE batches, 64 KiB JSON body (256 KiB for `PUT /api/workspace`).
 
 ### HTTP routes
 
@@ -91,13 +91,13 @@ The UI uses full `PUT` for path edits, not the project PATCH. `GET /api/health` 
 
 ### SSE
 
-Clients live in `sseClients`. Events: `status`, `job`, `log` (may include `replace` / `live`), `health`. A dead client is dropped without failing others — [sse.md](sse.md).
+Clients live in `sseClients`. Events: `status`, `job`, `log` (`{ id, lines }` where each line may include `replace` / `live`; a single `{ id, stream, text }` payload is still accepted by the UI), `health`. A dead client is dropped without failing others — [sse.md](sse.md). Logs are queued in [job-logs.md](job-logs.md) and flushed about every 80ms, on job finalize, on log clear, and on shutdown.
 
 ### Startup / shutdown
 
 On listen: log the URL, `setWorkspaceChangeListener` → `broadcastStatus`, `startWorkspaceWatcher`, then window or browser if flagged.
 
-`shutdown` (SIGINT / SIGTERM / window `onClosed`): `closeAppWindow`, SIGTERM running groups, 400ms later SIGKILL, `server.close` (1.5s exit fallback).
+`shutdown` (SIGINT / SIGTERM / window `onClosed`): flush pending log batches, `closeAppWindow`, SIGTERM running groups, 400ms later SIGKILL, `server.close` (1.5s exit fallback).
 
 ## Tests
 

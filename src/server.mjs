@@ -36,7 +36,14 @@ import {
   writeRawWorkspace,
 } from "./commands.mjs";
 import { parseEnvFile, applyEnvFile } from "./env-file.mjs";
-import { splitLogChunk } from "./job-logs.mjs";
+import {
+  applyStreamChunk,
+  createLogBatcher,
+  emptyStreamPartials,
+  LOG_FLUSH_MS,
+  LIVE_PARTIAL_MIN_MS,
+  streamPartialText,
+} from "./job-logs.mjs";
 import { parseMetroPortFromText } from "./metro.mjs";
 import { detectPrompt, promptsEqual, publicPrompt } from "./prompt.mjs";
 import { openPathArgs, openUrlArgs } from "./open-external.mjs";
@@ -58,6 +65,14 @@ const sseClients = new Set();
 const gitCache = new Map();
 /** Last full status snapshot; light rebuilds reuse git / pkg / commands from here. */
 let lastFullStatus = null;
+
+const logBatcher = createLogBatcher({
+  intervalMs: LOG_FLUSH_MS,
+  liveMinMs: LIVE_PARTIAL_MIN_MS,
+  onFlush(jobId, lines) {
+    broadcast("log", { id: jobId, lines });
+  },
+});
 
 const MIME = {
   ".html": "text/html; charset=utf-8",
@@ -200,7 +215,7 @@ function publicJob(job) {
 }
 
 function jobPartialText(job) {
-  return String(job?.partial || "").replace(/\r$/, "");
+  return streamPartialText(job?.partials);
 }
 
 function promptScanText(job) {
@@ -253,16 +268,15 @@ function refreshJobPrompt(job, { immediate = false } = {}) {
 }
 
 function publishLivePartial(job, stream) {
-  const text = jobPartialText(job);
+  const key = stream === "stderr" ? "stderr" : "stdout";
+  const text = String(job.partials?.[key] || "").replace(/\r$/, "");
   if (!text) {
-    if (job.livePartial) {
-      job.livePartial = false;
-    }
+    job.livePartial = false;
     return;
   }
   const at = new Date().toISOString();
   job.livePartial = true;
-  broadcast("log", { id: job.id, stream, text, at, replace: true, live: true });
+  logBatcher.enqueue(job.id, { stream: key, text, at, replace: true, live: true });
 }
 
 function repoHasRunningLongJob(repoId) {
@@ -355,7 +369,7 @@ async function buildStatus({ light = false } = {}) {
 }
 
 // ── SSE ────────────────────────────────────────────────────────────────────
-// Events: `status` (full payload), `job` (one job), `log` (stdout/stderr chunk), `health` (Recheck).
+// Events: `status` (full payload), `job` (one job), `log` (batched lines; may include `replace` / `live`), `health` (Recheck).
 
 function broadcast(event, data) {
   broadcastSse(sseClients, event, data);
@@ -387,7 +401,7 @@ function scanJobMetroPort(job) {
     const port = parseMetroPortFromText(entry?.text);
     if (port) found = port;
   }
-  const partial = parseMetroPortFromText(job.partial);
+  const partial = parseMetroPortFromText(jobPartialText(job));
   if (partial) found = partial;
   if (found) job.metroPort = found;
   return found;
@@ -404,13 +418,13 @@ function pushLogLine(job, stream, text, replace) {
     job.logs.splice(0, job.logs.length - MAX_LOG_LINES);
   }
   noteMetroPort(job, text);
-  broadcast("log", { id: job.id, stream, text, at, replace: Boolean(replace) });
+  logBatcher.enqueue(job.id, { stream, text, at, replace: Boolean(replace) });
 }
 
-/** Buffer incomplete lines; broadcast each completed line as `log`. */
+/** Buffer incomplete lines; broadcast completed lines as batched SSE `log`. */
 function appendLog(job, stream, chunk) {
-  const { events, partial } = splitLogChunk(job.partial, chunk.toString("utf8"));
-  job.partial = partial;
+  const { events, partials } = applyStreamChunk(job.partials, stream, chunk.toString("utf8"));
+  job.partials = partials;
   for (const event of events) {
     pushLogLine(job, stream, event.text, event.replace);
   }
@@ -419,12 +433,13 @@ function appendLog(job, stream, chunk) {
 }
 
 function flushPartialLog(job, { refresh = true } = {}) {
-  if (job.partial) {
-    const text = job.partial.replace(/\r$/, "");
-    job.partial = "";
-    job.livePartial = false;
-    if (text) pushLogLine(job, "stdout", text, false);
+  for (const stream of ["stdout", "stderr"]) {
+    const text = String(job.partials?.[stream] || "").replace(/\r$/, "");
+    if (text) pushLogLine(job, stream, text, false);
   }
+  job.partials = emptyStreamPartials();
+  job.livePartial = false;
+  logBatcher.flush(job.id);
   if (refresh) refreshJobPrompt(job);
 }
 
@@ -439,6 +454,7 @@ function pruneJobs(keepId) {
   for (const [id, job] of jobs) {
     if (keep.has(id)) continue;
     job.logs = [];
+    logBatcher.clear(id);
     jobs.delete(id);
   }
 }
@@ -590,7 +606,7 @@ function startJob(command) {
     finishedAt: null,
     exitCode: null,
     logs: [],
-    partial: "",
+    partials: emptyStreamPartials(),
     prompt: null,
     livePartial: false,
     pid: child.pid,
@@ -663,8 +679,9 @@ function clearJobLogs(commandId) {
     return { error: "unknown_job" };
   }
   job.logs = [];
-  job.partial = "";
+  job.partials = emptyStreamPartials();
   job.livePartial = false;
+  logBatcher.clear(commandId);
   clearPromptTimer(job);
   setJobPrompt(job, null);
   return { ok: true, id: commandId, logs: [], partial: "", prompt: null };
@@ -1267,6 +1284,7 @@ let shuttingDown = false;
 function shutdown() {
   if (shuttingDown) return;
   shuttingDown = true;
+  logBatcher.flushAll();
   closeAppWindow();
   const pids = [...jobs.values()].filter((job) => job.status === "running" && job.pid).map((job) => job.pid);
   for (const pid of pids) killProcessGroup(pid);

@@ -57,6 +57,32 @@ test("ignores Expo / Metro help", () => {
   assert.equal(detectPrompt("shift+m  more tools\nPress ? │ show all commands"), null);
 });
 
+test("ignores npm script headers that start with >", () => {
+  assert.equal(
+    detectPrompt(`> bs-app@1.0.0 android
+> npx expo run:android`),
+    null
+  );
+});
+
+test("ignores Gradle > Task and Configure project logs", () => {
+  assert.equal(
+    detectPrompt(`> Configure project :app
+> Task :app:compileDebugJavaWithJavac
+> Task :app:installDebug`),
+    null
+  );
+});
+
+test("ignores nested Gradle error lines that start with >", () => {
+  assert.equal(
+    detectPrompt(`Could not resolve all dependencies for configuration ':app:debugRuntimeClasspath'.
+> Could not resolve all dependencies for configuration ':app:debugRuntimeClasspath'.
+   > A problem occurred configuring project ':react-native-reanimated'.`),
+    null
+  );
+});
+
 test("detects press enter to continue", () => {
   const prompt = detectPrompt("Press Enter to continue");
   assert.equal(prompt?.kind, "enter");
