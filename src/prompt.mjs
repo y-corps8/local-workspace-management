@@ -10,7 +10,7 @@ const CONFIRM_TAIL_RE =
 const YES_NO_WORD_RE = /(?:^|[^\w])yes\/no\s*$/i;
 const CHOICE_YES_NO_RE = /(?:^|[^\w])((?:Yes|No)\s*\/\s*(?:Yes|No))\s*$/;
 const NUMBERED_RE = /^(?:[❯>]\s*)?(\d+)[.)]\s+(\S.*)$/;
-const POINTER_RE = /^[❯>]\s+(\S.*)$/;
+const POINTER_RE = /^❯\s+(\S.*)$/;
 const FREE_TEXT_RE =
   /\benter\s+a\s+(?:name|value|path|string|text|title|message)\b|\btype\s+(?:a|the|your)\b/i;
 const PRESS_ENTER_RE =
