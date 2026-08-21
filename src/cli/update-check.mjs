@@ -2,7 +2,7 @@
  * Packaged CLI update check and `locws upgrade`.
  *
  * Notices print to stderr. The browser never sends a shell string — upgrade
- * argv is hardcoded npm install -g locws@latest.
+ * argv is hardcoded npm install -g @y-corps/locws@latest.
  */
 import fs from "node:fs";
 import https from "node:https";
@@ -42,7 +42,7 @@ export function cloneHelpText({ url, workspacePath } = {}) {
     "  npm run start:browser     Same, open the default browser",
     "  npm run start:window      Same, native WebView (closing the window stops the server)",
     "",
-    `The ${CLI_NAME} CLI is for npm installs (npx ${CLI_NAME}, npm install -g ${CLI_NAME}).`,
+    `The ${CLI_NAME} CLI is for npm installs (npx ${NPM_PACKAGE_NAME}, npm install -g ${NPM_PACKAGE_NAME}).`,
     "Port: 4174, or OVERVIEW_PORT (integer 1–65535). Still binds 127.0.0.1 only.",
     `Workspace file: ${workspacePath ?? WORKSPACE_CONFIG_PATH}`,
   ].join("\n");
@@ -109,7 +109,7 @@ export function fetchLatestVersion({
     const req = request(
       {
         hostname: REGISTRY_HOST,
-        path: `/${packageName}/latest`,
+        path: `/${String(packageName).replaceAll("/", "%2F")}/latest`,
         method: "GET",
         headers: { Accept: "application/json" },
       },
@@ -160,7 +160,7 @@ export function upgradeArgv(platform = process.platform) {
 }
 
 export function cloneUpgradeMessage() {
-  return `This is a git clone, not an npm install. Use git pull and npm start. The ${CLI_NAME} CLI is for npm installs (npx ${CLI_NAME}, npm install -g ${CLI_NAME}).`;
+  return `This is a git clone, not an npm install. Use git pull and npm start. The ${CLI_NAME} CLI is for npm installs (npx ${NPM_PACKAGE_NAME}, npm install -g ${NPM_PACKAGE_NAME}).`;
 }
 
 export function upgradeSuccessMessage() {

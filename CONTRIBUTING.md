@@ -17,7 +17,7 @@ cd local-workspace-management
 npm start
 ```
 
-Copy `http://127.0.0.1:4174` into a browser. Ctrl+C stops the server. Other start modes: [docs/npm-scripts.md](docs/npm-scripts.md). Users who are not contributing can `npx locws start` or `npm install -g locws` then `locws start` instead.
+Copy `http://127.0.0.1:4174` into a browser. Ctrl+C stops the server. Other start modes: [docs/npm-scripts.md](docs/npm-scripts.md). Users who are not contributing can `npx @y-corps/locws start` or `npm install -g @y-corps/locws` then `locws start` instead.
 
 A clone stores `workspace.json` at the **repo root** (gitignored), not under `~/.config/locws/`. Do not commit `workspace.json` or `.cache/`. Copy [workspace.example.json](workspace.example.json) if you need a sample config locally.
 
@@ -75,7 +75,7 @@ This project follows the [Code of Conduct](CODE_OF_CONDUCT.md).
 
 Once a pull request is **approved and merged to `main`**, those changes ship in the **next released version** of `locws` on npm. Only [CODEOWNERS](.github/CODEOWNERS) publish. GitHub Releases trigger [publish.yml](.github/workflows/publish.yml): the tag must be `v` plus `package.json` `version`.
 
-- **Pre-release** (tag like `v0.1.1-beta.1`, version contains `-`) → npm dist-tag **`beta`**. Testers: `npx locws@beta` or `npm install -g locws@beta`.
-- **Full release** (tag like `v0.1.1`, version is `x.y.z` only) → npm **`latest`**. `npx locws` / `locws upgrade` stay on this tag (`npm install -g locws@latest`).
+- **Pre-release** (tag like `v0.1.1-beta.1`, version contains `-`) → npm dist-tag **`beta`**. Testers: `npx @y-corps/locws@beta` or `npm install -g @y-corps/locws@beta`.
+- **Full release** (tag like `v0.1.1`, version is `x.y.z` only) → npm **`latest`**. `npx @y-corps/locws` / `locws upgrade` stay on this tag (`npm install -g @y-corps/locws@latest`).
 
 A GitHub pre-release with a stable version, or a full release with a prerelease version, fails the job. `locws upgrade` never installs `beta`.
