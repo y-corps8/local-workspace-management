@@ -7,19 +7,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-title" content="Overview" />
     <title>Workspace overview</title>
-    <script>
-      try {
-        var theme = localStorage.getItem("overview.theme");
-        if (theme === "light" || theme === "dark") {
-          document.documentElement.dataset.theme = theme;
-          document.documentElement.style.colorScheme = theme;
-          if (theme === "light") {
-            var themeColor = document.querySelector('meta[name="theme-color"]');
-            if (themeColor) themeColor.content = "#f6f3eb";
-          }
-        }
-      } catch (e) {}
-    </script>
+    <script src="./theme-boot.js"></script>
     <link rel="manifest" href="./manifest.webmanifest" />
     <link rel="icon" href="./assets/icon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="./assets/apple-touch-icon.png" />
@@ -247,6 +235,6 @@
       </div>
     </div>
 
-    <script src="./app.js"></script>
+    <script type="module" src="./app.js"></script>
   </body>
 </html>

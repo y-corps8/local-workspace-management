@@ -1,41 +1,44 @@
 # Agent instructions
 
-Loopback dashboard at `127.0.0.1:4174`. The browser POSTs command **ids** only — never a shell string. How the pieces connect: [docs/README.md](docs/README.md).
+Loopback dashboard at `127.0.0.1:4174` (`OVERVIEW_PORT` may change the port). The browser POSTs command **ids** only — never a shell string. How the pieces connect: [docs/README.md](docs/README.md).
 
 ## Layout (do not flatten)
 
 ```
-src/                    Node server — server.mjs, commands.mjs, test-results.mjs, app-window.mjs, prompt.mjs, plus small helpers
-public/                 UI only — index.html, app.js, styles.css; icons in assets/
+src/                    Node server — server.mjs (CLI + listen) plus domain folders:
+                          http/ (static + /api/*), jobs/ (spawn/stdin/logs), config/ (workspace.json + paths),
+                          window/ (--window WebView + native sources), cli/ (upgrade + OS open)
+public/                 UI only — index.html, theme-boot.js, app.js (ESM orchestrator), js/ modules, styles.css; icons in assets/
 docs/                   User-facing understanding docs (not one page per module)
-docs/developers-guide/  Code map for contributors (one page per source file)
-.github/                Issue/PR templates and CI
-workspace.json          gitignored runtime config (template: workspace.example.json)
-.cache/                 gitignored last-run snapshots and native window helpers
-test/                   node:test fixtures (preload skips workspace.json)
+docs/developers-guide/  Code map for contributors (one page per source file; src/ pages follow the same folders)
+.github/                Issue/PR templates, CI, and npm publish on GitHub Releases (prerelease → dist-tag beta; full release → latest)
+workspace.json          gitignored runtime config at clone root (template: workspace.example.json); packaged: ~/.config/locws/
+.cache/                 gitignored last-run snapshots and native window helpers (clone root, or ~/.cache/locws when packaged)
+test/                   node:test fixtures (preload at test root; specs under http/ jobs/ config/ window/ cli/)
 ```
 
 Community files stay at the repo root (`CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, `SECURITY.md`, `LICENSE`).
 
-- New server code → `src/`
+- New server code → `src/<domain>/` (`http`, `jobs`, `config`, `window`, or `cli`). Keep `src/server.mjs` as the bin entry.
 - New UI assets → `public/` (icons → `public/assets/`)
 
 ## Path roots
 
-- [`src/commands.mjs`](src/commands.mjs) `APP_ROOT` is the **repo root** (`src/` parent). Do not reset it to `src/`.
-- [`src/server.mjs`](src/server.mjs) `STATIC_ROOT` is `public/` so `src/` and `docs/` are not served.
-- `workspace.json` and `.cache/` stay at the repo root.
-- Project `path` is per project: absolute or `~/...`. There is no user-chosen workspace folder. Leftover relative paths resolve against `APP_ROOT`.
+- [`src/config/paths.mjs`](src/config/paths.mjs) `APP_ROOT` is the **package/repo root** (directory of `package.json`). Do not set it to `src/` or `src/config/`. [`src/config/commands.mjs`](src/config/commands.mjs) re-exports it.
+- [`src/http/overview-http.mjs`](src/http/overview-http.mjs) `STATIC_ROOT` is `public/` so `src/` and `docs/` are not served. [`src/server.mjs`](src/server.mjs) calls `createOverviewApp()` and `listen` (`npm start` on a clone; locws CLI when packaged).
+- Dual-mode data: git clone keeps `workspace.json` and `.cache/` at `APP_ROOT`. Packaged installs (`node_modules` in `APP_ROOT`, e.g. npx / `npm i -g locws`) use `~/.config/locws/workspace.json` and `~/.cache/locws/` (Windows `%APPDATA%\locws` / `%LOCALAPPDATA%\locws`). `OVERVIEW_DATA_DIR` overrides both.
+- Project `path` is per project: absolute or `~/...`. There is no user-chosen workspace folder. Leftover relative paths resolve against `APP_ROOT` on clone, against the home directory when packaged.
 
 ## npm
 
-`start` / `start:browser` / `start:window` run `node src/server.mjs`. `start` prints the loopback URL and does **not** `open` it. `start:browser` (`--browser`) may `open` the loopback URL in the default browser (no `-n`, no `-a`) so an already-open Chrome/Safari gets a tab. `--window` / `--open` (`start:window`) opens a native WebView via [`src/app-window.mjs`](src/app-window.mjs): macOS Swift WKWebView `.app` (`open -W` without `-n`, Dock icon from `public/assets/`), Linux WebKitGTK (Python GI or `cc` + GTK), Windows `csc` + WebView2. Closing that window stops the Node process. Do not spawn Chrome for the dashboard window. Do not `open` the URL in the default browser from window mode or from bare `start`. `npm test` is `node --test` with `test/preload.mjs` (`OVERVIEW_SKIP_WORKSPACE_LOAD=1`). No extra npm packages, no bundler, no Electron. Do not add a client-side build step unless the project explicitly needs one.
+`start` / `start:browser` / `start:window` run `node src/server.mjs start` (plus `--browser` / `--window`). A git clone starts via those npm scripts (not the locws CLI). Packaged installs (`npx locws`, `npx locws@beta`, `npm i -g locws` / `locws@beta`) are the locws CLI (`locws start` / `locws start --browser` / `locws start --window`). Bare `locws` (no subcommand) prints usage and exits 1. Bind is `127.0.0.1` and port `4174`, or `OVERVIEW_PORT` (integer 1–65535). Invalid `OVERVIEW_PORT` prints an error and exits before listen. Do not bind `0.0.0.0` or `::1`. `start` prints the loopback URL and does **not** `open` it. `start:browser` (`locws start --browser`) may `open` the loopback URL in the default browser (no `-n`, no `-a`) so an already-open Chrome/Safari gets a tab. `--window` / `--open` (`locws start --window` / `start:window`) opens a native WebView via [`src/window/app-window.mjs`](src/window/app-window.mjs): macOS Swift WKWebView `.app` (`open -W` without `-n`), Dock icon from `public/assets/`), Linux WebKitGTK (Python GI or `cc` + GTK), Windows `csc` + WebView2. Closing that window stops the Node process. Do not spawn Chrome for the dashboard window. Do not `open` the URL in the default browser from window mode or from bare `start`. Packaged starts may print a stderr update notice; `locws upgrade` spawns hardcoded `npm install -g locws@latest` (never from the browser). Skip the registry check on git clone and when `OVERVIEW_SKIP_WORKSPACE_LOAD=1`. Clone `--help` lists the npm scripts; clone `upgrade` errors with `git pull` / `npm start`. `npm test` is `node --test test/*/*.test.mjs` with `test/preload.mjs` (`OVERVIEW_SKIP_WORKSPACE_LOAD=1`). No extra npm packages, no bundler, no Electron. Do not add a client-side build step unless the project explicitly needs one.
 
 ## Security
 
 - Keep the bind on loopback (`127.0.0.1`). Do not listen on `0.0.0.0` or another interface.
-- Do not add a client-supplied argv or shell path. Run accepts an allowlisted `id` only. Stop / stdin / restart / interact accept that id or a still-running job. Stdin is `{ id, text }` to that process, not a new shell.
-- Reject `/api/*` when `Origin` is present and not this loopback URL.
+- Do not add a client-supplied argv or shell path. Run accepts an allowlisted `id` only. Stop / stdin / restart / interact accept that id or a still-running job. Stdin is `{ id, text }` to that process, not a new shell. If `job.prompt` is set, accept only `prompt.options[].value` (including `""` for Enter), max 200 characters; with no prompt return `no_prompt`. Overlay buttons stay the only UI path.
+- Reject `/api/*` **and** static when `Host` is present and not this loopback (`127.0.0.1:port` / `localhost:port`). Same for `Origin` on `/api/*`. Missing Host/Origin is allowed (curl). Apply `securityHeaders()` (frame deny, CSP `script-src 'self'` with no `unsafe-inline`, nosniff, no-referrer) on JSON, static, and SSE. Theme FOUC uses classic [`public/theme-boot.js`](public/theme-boot.js), not an inline script.
+- Skip dangerous keys from a project `.env` (`NODE_OPTIONS`, `NODE_PATH`, `LD_PRELOAD`, `DYLD_*`, `PYTHONPATH`, `JAVA_TOOL_OPTIONS`, `DOTNET_STARTUP_HOOKS`, `BASH_ENV`, `ENV`, `PERL5OPT`, `RUBYOPT`). PATH stays append-only.
 - `publicCommand` must not leak `argv` or Metro `kind` / `method` / `params`.
 
 ## Docs
@@ -46,7 +49,7 @@ The code map is [docs/developers-guide/](docs/developers-guide/README.md) — on
 
 ## Test overview
 
-Last test runs is **opt-in**, default off (`showTestOverview: false`). Do not show it in first-run setup or on add/edit forms. Users can enable it later from the **Settings** list; the checkbox persists immediately. Test command buttons on project cards stay as part of project setup. Keep [`src/test-results.mjs`](src/test-results.mjs); skip `readAllLastTestRuns` in status when the flag is off.
+Last test runs is **opt-in**, default off (`showTestOverview: false`). Do not show it in first-run setup or on add/edit forms. Users can enable it later from the **Settings** list; the checkbox persists immediately. Test command buttons on project cards stay as part of project setup. Keep [`src/jobs/test-results.mjs`](src/jobs/test-results.mjs); skip `readAllLastTestRuns` in status when the flag is off.
 
 ## Command groups
 
@@ -54,7 +57,7 @@ Suggested examples: `run`, `database`, `seed`, `test`, `tools`. Do not hardcode 
 
 ## package.json
 
-Managed Node projects need `<path>/package.json` `scripts` for probe and package-manager buttons (npm, pnpm, yarn, or bun — detected at run time). Disable those commands that are missing from that file (or if the folder / package.json is missing). Custom `argv` is exempt. Setup recommends a `package.json` (create one or Browse a Node project) but still allows a custom command name + command from the form after Probe, with or without package.json. Path is edited in **Settings** (Add/Edit form; **Browse** is `POST /api/workspace/browse`). Display **name** is free text; **id** stays a slug. This repo’s `package.json` is `npm start` / `start:browser` / `start:window` / `npm test` (no extra packages).
+Managed Node projects need `<path>/package.json` `scripts` for probe and package-manager buttons (npm, pnpm, yarn, or bun — detected at run time). Disable those commands that are missing from that file (or if the folder / package.json is missing). Custom `argv` is exempt. Setup recommends a `package.json` (create one or Browse a Node project) but still allows a custom command name + command from the form after Probe, with or without package.json. Path is edited in **Settings** (Add/Edit form; **Browse** is `POST /api/workspace/browse`). Display **name** is free text; **id** stays a slug. This repo’s `package.json` is the **`locws`** CLI (`npm start` / `start:browser` / `start:window` / `npm test`; no extra packages).
 
 ## Expo Metro
 
@@ -75,7 +78,7 @@ Metro port is read from the running job’s logs (not a setup field). Expo dev-c
 - Setup lists custom `argv` as editable rows (multiple, including after save): name, command, group, long-running, destructive. **Add custom command** after Probe. Do not collapse back to a single add-only field. Keep `script` stable when the button label changes. Project command **label** is lowercase (`start`, `test`). Do not show a hover tip on card command buttons. Settings, refresh, health pills, and Expo toolbar tips stay.
 - Console has no stdin line. Do not add one unless product asks again. Choice / confirm / press-enter prompts use a blur overlay on that tab (parsed buttons) via `POST /api/stdin`. Do not put **Yes** / **No** / **Enter** on the toolbar. Free-text prompts are out of scope. Do not treat npm/Gradle ASCII `>` log prefixes as choice prompts; Inquirer menus use `❯`.
 - Console height is user-resizable (drag the handle above the console, or ArrowUp / ArrowDown on that handle) and persisted in `localStorage` (`overview.consoleHeight`). Height changes only while the pointer is held; it locks on release. Collapse is persisted the same way (`overview.consoleCollapsed`). Collapsing Console pauses log painting; expand reloads the current job. Theme is persisted the same way (`overview.theme`, `light` or `dark`). The Console dock stays dark in both themes (terminal chrome and logs); Appearance only changes the page around it. Filter logs is only on the title row while the console is expanded. First visit with no stored preference starts collapsed when there are no jobs, and uses the dark theme. Do not add a health poll.
-- PWA assets live in `public/` (`manifest.webmanifest`, `sw.js`) and `public/assets/` (icons). The service worker must not cache `/api/*` or SSE. Do not add Electron, Playwright, or a bundler for a standalone window. `start:window` opens a native WebView (macOS WKWebView `.app` + `open -W` without `-n`, Linux WebKitGTK, Windows WebView2) with the `public/assets/` icon. Closing that window stops the server. Do not spawn Chrome for that window. Do not `open` the URL in the default browser from window mode or from bare `start`.
+- PWA assets live in `public/` (`manifest.webmanifest`, `sw.js`) and `public/assets/` (icons). The service worker must not cache `/api/*` or SSE. Do not add Electron, Playwright, or a bundler for a standalone window. `start:window` opens a native WebView (macOS WKWebView `.app` + `open -W` without `-n`, Linux WebKitGTK, Windows WebView2) with the `public/assets/` icon. Closing that window stops the server. Do not spawn Chrome for that window. Do not `open` the URL in the default browser from window mode or from bare `start`. Dashboard JS is native ESM: classic [`public/theme-boot.js`](public/theme-boot.js) in `<head>`, then `<script type="module" src="./app.js">`. Keep argv parsing in [`public/js/argv.js`](public/js/argv.js) identical to [`src/config/argv.mjs`](src/config/argv.mjs).
 
 ## Health pills
 
@@ -83,7 +86,7 @@ Green if that project has a **long-running** job started from this dashboard, or
 
 ## Jobs and workspace
 
-Stop/stdin/restart by live job id if the allowlist dropped that command. After each log chunk, detect choice prompts from `job.partials` (see [`src/prompt.mjs`](src/prompt.mjs)) and put `prompt` on the public job. Batch log SSE (~80ms) so two running commands do not flood the UI. Clear the SIGKILL timer on finalize. Shutdown SIGTERM then SIGKILL. Atomic `workspace.json` writes (temp under `.cache/`, then rename); keep last-good in memory on corrupt JSON; watch the file for external edits (ignore directory events with a null filename and `.workspace.*.tmp`). Yarn/pnpm/bun at `resolveArgv`; on Windows spawn `npm.cmd` / `pnpm.cmd` / `yarn.cmd` / `bun.exe`. `jestJson` only for Jest. Child `.env` must not replace dashboard PATH extras (append project PATH entries). Job start/stop broadcasts light status (skip git); restart finalize must not double-rebuild.
+Stop/stdin/restart by live job id if the allowlist dropped that command. After each log chunk, detect choice prompts from `job.partials` (see [`src/jobs/prompt.mjs`](src/jobs/prompt.mjs)) and put `prompt` on the public job. Batch log SSE (~80ms) so two running commands do not flood the UI. Clear the SIGKILL timer on finalize. Shutdown SIGTERM then SIGKILL. Atomic `workspace.json` writes (temp next to the config file as `.workspace.<pid>.tmp`, then rename); keep last-good in memory on corrupt JSON; watch the config directory for external edits (ignore directory events with a null filename and `.workspace.*.tmp`). Atomic last-test snapshots (`.last-test-runs.<pid>.tmp` then rename). Yarn/pnpm/bun at `resolveArgv`; on Windows spawn `npm.cmd` / `pnpm.cmd` / `yarn.cmd` / `bun.exe` and rewrite `./mvnw` / `mvnw` → `mvnw.cmd`. `jestJson` only for Jest. Child `.env` must not replace dashboard PATH extras (append project PATH entries) and must skip the denylist. Job start/stop broadcasts light status (skip git); restart finalize must not double-rebuild. Windows `--browser` opens the URL with `explorer` (not `cmd /c start`).
 
 ## Git
 

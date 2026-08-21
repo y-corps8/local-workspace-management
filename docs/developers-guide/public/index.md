@@ -1,14 +1,14 @@
 # `public/index.html`
 
-Single-page shell. No bundler — loads `./styles.css` and `./app.js` from `public/`. An inline script in `<head>` reads `localStorage` key `overview.theme` before paint so the first frame matches Light / Dark.
+Single-page shell. No bundler — loads `./styles.css`, classic `./theme-boot.js` in `<head>`, then `<script type="module" src="./app.js">` at the end of `<body>`. Theme boot is **not** `type="module"` so CSP can stay `script-src 'self'` with no `unsafe-inline`.
 
-Served as `/` by [server.mjs](../src/server.md) (`STATIC_ROOT`). How to use the dashboard: [User guide](../../user-guide.md).
+Served as `/` by [overview-http.mjs](../src/http/overview-http.md) (`STATIC_ROOT`). How to use the dashboard: [User guide](../../user-guide.md).
 
 ## Imports / used by
 
-**Loads:** [styles.css](styles.md), [app.js](app.md), [manifest.webmanifest](manifest.md), [assets](assets.md)
+**Loads:** [theme-boot.js](theme-boot.md), [styles.css](styles.md), [app.js](app.md) (which loads [js/](js/argv.md)), [manifest.webmanifest](manifest.md), [assets](assets.md)
 
-**Used by:** the browser / native WebView. [app.js](app.md) binds by element id.
+**Used by:** the browser / native WebView. [dom.js](js/dom.md) binds by element id.
 
 ## Exports
 
@@ -16,7 +16,7 @@ None (HTML).
 
 ## How it works
 
-DOM regions map 1:1 to `app.js` refs:
+DOM regions map 1:1 to `els` in [dom.js](js/dom.md):
 
 | Region | Ids |
 |--------|-----|
@@ -27,7 +27,7 @@ DOM regions map 1:1 to `app.js` refs:
 | Confirm | `#confirm-modal` — destructive commands (`window.confirm` is not used) |
 | Settings sheet | `#setup-panel` — list + add/edit form |
 
-The console section starts with `is-collapsed` in markup; `app.js` applies the stored preference after status loads.
+The console section starts with `is-collapsed` in markup; [console.js](js/console.md) applies the stored preference after status loads.
 
 `#setup-test-kind-field` is in the HTML but hidden — Probe still sets `testKind` internally. Do not show that select on the form.
 

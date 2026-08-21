@@ -1,0 +1,72 @@
+name: publish
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  publish:
+    # Forks and PRs cannot create a release on this repo. Contributors must not publish.
+    if: github.repository == 'y-corps8/local-workspace-management'
+    runs-on: ubuntu-latest
+    environment: npm-publish
+    steps:
+      - name: Restrict publish to CODEOWNERS
+        env:
+          ACTOR: ${{ github.actor }}
+        run: |
+          # Keep in sync with .github/CODEOWNERS (people who review PRs).
+          case "$ACTOR" in
+            y-corps8|y-corps08|mohityadavv) ;;
+            *)
+              echo "Only CODEOWNERS may publish locws. ${ACTOR} is not allowed."
+              exit 1
+              ;;
+          esac
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.release.tag_name }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: https://registry.npmjs.org
+      - name: Release tag must match package.json version
+        env:
+          TAG: ${{ github.event.release.tag_name }}
+          PRERELEASE: ${{ github.event.release.prerelease }}
+        run: |
+          version="$(node -p "require('./package.json').version")"
+          expected="v${version}"
+          if [ "$TAG" != "$expected" ]; then
+            echo "Release tag ${TAG} must be ${expected} (package.json version ${version})."
+            exit 1
+          fi
+          case "$version" in
+            *-*)
+              if [ "$PRERELEASE" != "true" ]; then
+                echo "Prerelease version ${version} must be published as a GitHub pre-release."
+                exit 1
+              fi
+              ;;
+            *)
+              if [ "$PRERELEASE" = "true" ]; then
+                echo "GitHub pre-release requires a prerelease package.json version (e.g. 0.1.1-beta.1)."
+                exit 1
+              fi
+              ;;
+          esac
+      - run: npm test
+      - name: Publish to npm
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          PRERELEASE: ${{ github.event.release.prerelease }}
+        run: |
+          if [ "$PRERELEASE" = "true" ]; then
+            npm publish --access public --provenance --tag beta
+          else
+            npm publish --access public --provenance
+          fi

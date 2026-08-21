@@ -17,9 +17,9 @@ cd local-workspace-management
 npm start
 ```
 
-Copy `http://127.0.0.1:4174` into a browser. Ctrl+C stops the server. Other start modes: [docs/npm-scripts.md](docs/npm-scripts.md).
+Copy `http://127.0.0.1:4174` into a browser. Ctrl+C stops the server. Other start modes: [docs/npm-scripts.md](docs/npm-scripts.md). Users who are not contributing can `npx locws start` or `npm install -g locws` then `locws start` instead.
 
-Do not commit `workspace.json` or `.cache/`. Copy [workspace.example.json](workspace.example.json) if you need a sample config locally.
+A clone stores `workspace.json` at the **repo root** (gitignored), not under `~/.config/locws/`. Do not commit `workspace.json` or `.cache/`. Copy [workspace.example.json](workspace.example.json) if you need a sample config locally.
 
 To send a change, fork and open a pull request — see [How to contribute](#how-to-contribute).
 
@@ -33,7 +33,7 @@ That is `node --test` with [test/preload.mjs](test/preload.mjs) (`OVERVIEW_SKIP_
 
 ## Layout
 
-New server code goes in `src/`. New UI assets go in `public/` (icons in `public/assets/`). Do not flatten that split.
+New server code goes in `src/<domain>/` (`http`, `jobs`, `config`, `window`, or `cli`). Keep `src/server.mjs` as the bin entry. New UI assets go in `public/` (icons in `public/assets/`). Do not flatten that split.
 
 The code map is [docs/developers-guide/README.md](docs/developers-guide/README.md) — one page per source file. If you add or rename a `src/` or `public/` file, add or update the matching page there.
 
@@ -70,3 +70,12 @@ AIs working in this repo should follow [AGENTS.md](AGENTS.md).
 Use the bug or feature templates when they fit. Do not paste your live `workspace.json` (it has local paths). Describe the setup in words, or redact paths.
 
 This project follows the [Code of Conduct](CODE_OF_CONDUCT.md).
+
+## Releases
+
+Once a pull request is **approved and merged to `main`**, those changes ship in the **next released version** of `locws` on npm. Only [CODEOWNERS](.github/CODEOWNERS) publish. GitHub Releases trigger [publish.yml](.github/workflows/publish.yml): the tag must be `v` plus `package.json` `version`.
+
+- **Pre-release** (tag like `v0.1.1-beta.1`, version contains `-`) → npm dist-tag **`beta`**. Testers: `npx locws@beta` or `npm install -g locws@beta`.
+- **Full release** (tag like `v0.1.1`, version is `x.y.z` only) → npm **`latest`**. `npx locws` / `locws upgrade` stay on this tag (`npm install -g locws@latest`).
+
+A GitHub pre-release with a stable version, or a full release with a prerelease version, fails the job. `locws upgrade` never installs `beta`.
