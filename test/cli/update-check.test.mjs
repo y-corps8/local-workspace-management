@@ -142,7 +142,7 @@ test("helpText on a clone lists npm start scripts and not locws upgrade", () => 
   assert.match(text, /npm run start:window/);
   assert.match(text, /OVERVIEW_PORT/);
   assert.match(text, /\/tmp\/workspace\.json/);
-  assert.match(text, /npx locws/);
+  assert.match(text, /npx @y-corps\/locws/);
   assert.doesNotMatch(text, /locws upgrade/);
 });
 
@@ -150,7 +150,7 @@ test("cloneUpgradeMessage points at git pull and npm start", () => {
   const text = cloneUpgradeMessage();
   assert.match(text, /git pull/);
   assert.match(text, /npm start/);
-  assert.match(text, /npx locws/);
+  assert.match(text, /npx @y-corps\/locws/);
 });
 
 test("checkForUpdate skips git clone and OVERVIEW_SKIP_WORKSPACE_LOAD", async () => {
@@ -199,9 +199,9 @@ test("checkForUpdate notifies when latest is the same x.y.z as a prerelease curr
   assert.deepEqual(found, { current: "0.1.1-beta.1", latest: "0.1.1" });
 });
 
-test("upgradeArgv is hardcoded npm install -g locws@latest", () => {
-  assert.deepEqual(upgradeArgv("darwin"), ["npm", "install", "-g", "locws@latest"]);
-  assert.deepEqual(upgradeArgv("win32"), ["npm.cmd", "install", "-g", "locws@latest"]);
+test("upgradeArgv is hardcoded npm install -g @y-corps/locws@latest", () => {
+  assert.deepEqual(upgradeArgv("darwin"), ["npm", "install", "-g", "@y-corps/locws@latest"]);
+  assert.deepEqual(upgradeArgv("win32"), ["npm.cmd", "install", "-g", "@y-corps/locws@latest"]);
 });
 
 test("runUpgrade from a clone refuses without spawning npm", async () => {
@@ -234,7 +234,7 @@ test("runUpgrade spawns npm and prints success on exit 0", async () => {
     platform: "darwin",
     spawnFn(file, args, options) {
       assert.equal(file, "npm");
-      assert.deepEqual(args, ["install", "-g", "locws@latest"]);
+      assert.deepEqual(args, ["install", "-g", "@y-corps/locws@latest"]);
       assert.equal(options.stdio, "inherit");
       const child = new EventEmitter();
       queueMicrotask(() => child.emit("exit", 0));
@@ -249,12 +249,12 @@ test("runUpgrade spawns npm and prints success on exit 0", async () => {
   assert.equal(messages[0], upgradeSuccessMessage());
 });
 
-test("fetchLatestVersion requests the registry latest path", async () => {
+test("fetchLatestVersion encodes a scoped package name in the registry path", async () => {
   const version = await fetchLatestVersion({
     request(options, onResponse) {
       assert.equal(options.hostname, "registry.npmjs.org");
       assert.equal(options.method, "GET");
-      assert.equal(options.path, "/locws/latest");
+      assert.equal(options.path, "/@y-corps%2Flocws/latest");
       const res = new EventEmitter();
       queueMicrotask(() => {
         onResponse(res);
