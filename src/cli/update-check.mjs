@@ -2,7 +2,7 @@
  * Packaged CLI update check and `locws upgrade`.
  *
  * Notices print to stderr. The browser never sends a shell string — upgrade
- * argv is hardcoded npm install -g @y-corps/locws@latest.
+ * argv is hardcoded npm install -g locws@latest.
  */
 import fs from "node:fs";
 import https from "node:https";

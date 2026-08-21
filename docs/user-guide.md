@@ -7,8 +7,8 @@ This page is how to use **Workspace overview**: start it, add your projects, run
 Install and run the CLI:
 
 ```bash
-npx @y-corps/locws start
-# or: npm install -g @y-corps/locws && locws start
+npx locws start
+# or: npm install -g locws && locws start
 ```
 
 Copy the address it prints (`http://127.0.0.1:4174`) into a browser. If that port is busy, start with `OVERVIEW_PORT` set to another port.

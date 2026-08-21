@@ -48,7 +48,7 @@ Project `path` is per project: absolute or `~/...`. Leftover relative paths reso
 | `npm run start:browser` | Same + may `open` the loopback URL |
 | `npm run start:window` | Same + native WebView; closing the window stops the server |
 | `locws start` / `locws start --browser` / `locws start --window` | Same as the three scripts (published bin) |
-| `locws upgrade` | Hardcoded `npm install -g @y-corps/locws@latest`; does not start the server |
+| `locws upgrade` | Hardcoded `npm install -g locws@latest`; does not start the server |
 | `npm test` | `node --import ./test/preload.mjs --test test/*/*.test.mjs` |
 
 `test/preload.mjs` sets `OVERVIEW_SKIP_WORKSPACE_LOAD=1` so tests never read or write your `workspace.json`. Details: [npm scripts](../npm-scripts.md), [test catalog](test.md).

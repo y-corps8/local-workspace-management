@@ -11,7 +11,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 export const CLI_NAME = "locws";
-export const NPM_PACKAGE_NAME = "@y-corps/locws";
+export const NPM_PACKAGE_NAME = "locws";
 
 function pathApi(platform = process.platform) {
   return platform === "win32" ? path.win32 : path.posix;
