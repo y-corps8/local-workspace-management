@@ -11,15 +11,15 @@
 ## How to use it
 
 ```bash
-npx locws start
+npx @y-corps/locws start
 # or install once:
-npm install -g locws
+npm install -g @y-corps/locws
 locws start
 ```
 
 - Prints [http://127.0.0.1:4174](http://127.0.0.1:4174) — copy it into a browser. Ctrl+C stops the server.
 - Same server, open a tab: `locws start --browser`. Dedicated window: `locws start --window`. Details: [npm scripts](docs/npm-scripts.md).
-- If a newer npm version exists, the terminal prints it. Upgrade with `locws upgrade` (runs `npm install -g locws@latest`). Git clones do not nag; use `git pull` there. Testers: `npx locws@beta start`.
+- If a newer npm version exists, the terminal prints it. Upgrade with `locws upgrade` (runs `npm install -g @y-corps/locws@latest`). Git clones do not nag; use `git pull` there. Testers: `npx @y-corps/locws@beta start`.
 
 Then **Add project** → Browse or paste a path (absolute or `~/...`) → **Probe** → pick commands → **Add Project**. **Cancel** dismisses without saving. Step by step: [User guide](docs/user-guide.md).
 
@@ -35,7 +35,7 @@ npm start
 
 - **One place for many repos** — Run, database, seed, test, and custom commands live on project cards instead of a pile of terminals. Other apps start from their folder path, so you do not have to load every project in the editor.
 - **Safer than a generic runner** — The dashboard only listens on your machine (`127.0.0.1`). The browser can start a command you already allowlisted — it never sends a shell string or a path you type at run time.
-- **No extra stack** — Plain Node. Users run `npx locws start` or `npm install -g locws`. Contributors use `npm start` / `start:browser` / `start:window`. No Electron, no bundler, no extra npm packages to install or keep updated.
+- **No extra stack** — Plain Node. Users run `npx @y-corps/locws start` or `npm install -g @y-corps/locws`. Contributors use `npm start` / `start:browser` / `start:window`. No Electron, no bundler, no extra npm packages to install or keep updated.
 - **A dedicated window if you want one** — `locws start --window` (or `npm run start:window`) opens a native OS WebView with the app icon (not Chrome). Closing that window stops the server. A browser tab works the same if you prefer it.
 - **See what’s running** — Health pills show whether each configured port was open at the last check (refresh, not a live poll). The console streams logs and puts Yes/No on blocking prompts so you can answer without leaving the page.
 - **Fits how you already work** — Buttons use npm, pnpm, yarn, or bun from each project’s `package.json`, or a custom command you add. Optional last-test cards and Expo live actions (reload, iOS, Android, …) when Metro is up.
