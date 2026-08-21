@@ -5,26 +5,26 @@ Local workspace management is a loopback-only dashboard. The browser never sends
 ## How the pieces connect
 
 ```
-browser / native WebView window   →  public/ (UI)  →  src/server.mjs (HTTP + jobs)
-                                                     ├─ src/commands.mjs   (allowlist, workspace.json)
-                                                     ├─ src/package-manager.mjs
-                                                     ├─ src/app-window.mjs (--window wrapper)
-                                                     ├─ src/prompt.mjs     (choice / confirm from logs)
-                                                     └─ src/test-results.mjs (.cache + project artifacts)
+browser / native WebView window   →  public/ (UI)  →  src/server.mjs (CLI + listen)
+                                                     ├─ src/http/     (static + /api/*)
+                                                     ├─ src/jobs/     (spawn / stdin / logs)
+                                                     ├─ src/config/   (allowlist, paths)
+                                                     ├─ src/cli/      (upgrade, OS open)
+                                                     └─ src/window/   (--window WebView)
 ```
 
-1. [`npm start`](npm-scripts.md) launches [`src/server.mjs`](../src/server.mjs) on `127.0.0.1:4174` and prints the URL (does not open a browser). [`start:browser`](npm-scripts.md) also opens the URL in the default browser. `start:window` runs [`src/app-window.mjs`](../src/app-window.mjs); closing that window stops the server.
-2. The server serves [`public/`](developers-guide/public/index.md) and exposes `/api/*`.
-3. [`src/commands.mjs`](../src/commands.mjs) loads [`workspace.json`](workspace-config.md) and builds the command allowlist.
-4. [`src/test-results.mjs`](../src/test-results.mjs) fills the last-run cards from Jest/Maven artifacts plus `.cache/last-test-runs.json`.
-5. [`src/prompt.mjs`](../src/prompt.mjs) reads a running job’s unfinished log line for Yes/No, choice, and press-enter prompts (overlay buttons only).
+1. [`npx locws start`](npm-scripts.md) / [`npm start`](npm-scripts.md) launches [`src/server.mjs`](../src/server.mjs) on `127.0.0.1:4174` (or `OVERVIEW_PORT`) and prints the URL (does not open a browser). [`start:browser`](npm-scripts.md) / `locws start --browser` also opens the URL in the default browser. `start:window` / `locws start --window` runs [`src/window/app-window.mjs`](../src/window/app-window.mjs); closing that window stops the server. `locws upgrade` does not start the server.
+2. [`src/http/overview-http.mjs`](../src/http/overview-http.mjs) serves [`public/`](developers-guide/public/index.md) and exposes `/api/*`. Jobs live in [`src/jobs/jobs.mjs`](../src/jobs/jobs.mjs).
+3. [`src/config/commands.mjs`](../src/config/commands.mjs) loads [`workspace.json`](workspace-config.md) (clone: repo root; packaged: `~/.config/locws/`) and builds the command allowlist.
+4. [`src/jobs/test-results.mjs`](../src/jobs/test-results.mjs) fills the last-run cards from Jest/Maven artifacts plus last-test snapshots under `CACHE_DIR`.
+5. [`src/jobs/prompt.mjs`](../src/jobs/prompt.mjs) reads a running job’s unfinished log line for Yes/No, choice, and press-enter prompts (overlay buttons only).
 
 ## Pages
 
 | Page | What it covers |
 |------|----------------|
 | [user-guide.md](user-guide.md) | How to use the dashboard (click-through) |
-| [npm-scripts.md](npm-scripts.md) | `npm start`, `start:browser`, `start:window`, `npm test` |
+| [npm-scripts.md](npm-scripts.md) | `locws start`, `npm start`, `start:browser`, `start:window`, `locws upgrade`, `npm test` |
 | [workspace-config.md](workspace-config.md) | `workspace.json` fields, command groups, security model |
 | [test-results.md](test-results.md) | Jest/Maven paths, snapshot merge |
 | [developers-guide/](developers-guide/README.md) | Code map — what each `src/` and `public/` file does |

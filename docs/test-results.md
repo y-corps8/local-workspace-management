@@ -1,8 +1,8 @@
-# `src/test-results.mjs`
+# Last test runs
 
 Last-run summaries for the dashboard test cards. Reads artifacts **inside each project folder** and merges with snapshots written after a test job from this UI. Prefer the newer `finishedAt`. Does not modify project files.
 
-Used by [`src/server.mjs`](../src/server.mjs): `buildStatus()` calls `readAllLastTestRuns()` only when `showTestOverview` is on; `finalizeJob` for `kind === "test"` still calls `readTestArtifact` + `snapshotFromJob` + `saveTestSnapshot`.
+Used by [`src/http/overview-http.mjs`](../src/http/overview-http.mjs): `buildStatus()` calls `readAllLastTestRuns()` only when `showTestOverview` is on; [`src/jobs/jobs.mjs`](../src/jobs/jobs.mjs) `finalizeJob` for `kind === "test"` still calls `readTestArtifact` + `snapshotFromJob` + `saveTestSnapshot`.
 
 ## Artifact paths (per project `path`)
 
@@ -34,7 +34,7 @@ XML parser reads `<testsuite>` counts and failed `<testcase>` names (cap 8). `so
 
 ## Cache snapshots
 
-Path: `.cache/last-test-runs.json` under the **repo root** (`LAST_TEST_RUNS_PATH` from [`src/commands.mjs`](../src/commands.mjs)). Gitignored.
+Path: `last-test-runs.json` under `CACHE_DIR` (`LAST_TEST_RUNS_PATH` from [`src/config/commands.mjs`](../src/config/commands.mjs)). Git clone: `<repo>/.cache/`. Packaged: `~/.cache/locws/` (Windows `%LOCALAPPDATA%\locws`). Gitignored in this repo.
 
 After an overview-launched test job exits, the server writes one row per project id via `saveTestSnapshot`. `snapshotFromJob` copies counts from the artifact (if any), job timestamps, `commandId` / `commandLabel`, and `exitCode`. `source: "snapshot"`.
 
@@ -61,4 +61,4 @@ source        jest-results | surefire | snapshot | null
 
 `statusFromCounts`: explicit `success` boolean, else `exitCode === 0` and no failures, else `failed > 0` → fail.
 
-Code map (exports, callers): [developers-guide/src/test-results.md](developers-guide/src/test-results.md).
+Code map (exports, callers): [developers-guide/src/jobs/test-results.md](developers-guide/src/jobs/test-results.md).

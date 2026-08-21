@@ -4,16 +4,20 @@ This page is how to use **Workspace overview**: start it, add your projects, run
 
 ## 1. Start
 
-In this repo:
+Install and run the CLI:
 
 ```bash
-npm start
+npx locws start
+# or: npm install -g locws && locws start
 ```
 
-Copy the address it prints (`http://127.0.0.1:4174`) into a browser.
+Copy the address it prints (`http://127.0.0.1:4174`) into a browser. If that port is busy, start with `OVERVIEW_PORT` set to another port.
 
-- Same app in a new browser tab: `npm run start:browser`
-- Its own window: `npm run start:window` — closing that window stops the app
+- Same app in a new browser tab: `locws start --browser`
+- Its own window: `locws start --window` — closing that window stops the app
+- Upgrade a global install: `locws upgrade`
+
+From a git clone of this repo, `npm start` / `start:browser` / `start:window` are the same server. Details: [npm scripts](npm-scripts.md).
 
 In the terminal, Ctrl+C stops it.
 

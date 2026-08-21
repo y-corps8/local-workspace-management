@@ -1,20 +1,31 @@
 # Workspace config (`workspace.json`)
 
-Runtime config for projects and command buttons. **Either** setup path is valid; both only write this one gitignored file at the repo root:
+Runtime config for projects and command buttons. **Either** setup path is valid; both only write this one file:
 
 1. **Portal** — first-run / **Settings** in the dashboard. Add, Update, confirmed Remove, **Show on dashboard**, drag-to-reorder, and the Settings **Show last test runs** checkbox write `workspace.json` and reload in memory (no process restart). Light / Dark is a browser preference (`localStorage`), not this file. There is no **Save setup**.
-2. **JSON** — copy [`workspace.example.json`](../workspace.example.json) (filled sample for checking the UI) to `workspace.json`, or hand-edit. Restart `npm start` after a manual edit.
+2. **JSON** — copy [`workspace.example.json`](../workspace.example.json) (filled sample for checking the UI) to the live path below, or hand-edit. Restart after a manual edit.
 
 There is no second config format. Portal setup does not store anything else.
+
+## Where the file lives
+
+| How you run | Live `workspace.json` |
+|-------------|------------------------|
+| Git clone (`npm start`) | `<repo>/workspace.json` (gitignored) |
+| `npx locws` / `npm install -g locws` | `~/.config/locws/workspace.json` (Windows `%APPDATA%\locws\workspace.json`; `$XDG_CONFIG_HOME/locws/workspace.json` if set) |
+
+Startup prints `Workspace file  …` so you can see which path this process is using. Clone and packaged installs do **not** share a file. Copy the JSON yourself if you switch from a checkout to `npx`.
+
+Override both config and cache: `OVERVIEW_DATA_DIR=/some/folder` → `workspace.json` and `.cache/` under that folder.
 
 ```bash
 cp workspace.example.json workspace.json
 npm start
 ```
 
-- **Live file:** `workspace.json` at the **repo root** (gitignored)
 - **Sample:** [`workspace.example.json`](../workspace.example.json)
-- **Loader:** [`src/commands.mjs`](../src/commands.mjs) (`readRawWorkspace` / `readCleanWorkspace` / `writeRawWorkspace`)
+- **Loader:** [`src/config/commands.mjs`](../src/config/commands.mjs) (`readRawWorkspace` / `readCleanWorkspace` / `writeRawWorkspace`)
+- **Path rules:** [`src/config/paths.mjs`](../src/config/paths.mjs)
 
 ## Top-level fields
 
@@ -42,7 +53,7 @@ Older files may still have `workspaceRoot`, top-level `metroPort` / `expoDevClie
 | `name` | Card title (free text; spaces and punctuation allowed). Defaults to `id` |
 | `description` | Short subtitle on the card (max 50 characters). Setup field **Description** |
 | `hidden` | If `true`, omit from dashboard cards, health pills, and last-test cards. Still in Settings. Omit or `false` means shown |
-| `path` | Absolute or `~/...` (relative still means this repo). Editable in Settings |
+| `path` | Absolute or `~/...`. Leftover relative paths: clone resolves against the repo root; packaged installs resolve against the home directory. Editable in Settings |
 | `ports` | Optional number list (stored with the project; not shown on the card) |
 | `testKind` | `jest` (default) or `maven` — which artifacts [test-results.md](test-results.md) reads. Probe may set this; the project form does not show a Tests select |
 | `metroPort` | Optional legacy fallback for Expo live actions if logs have not printed a URL yet. Live actions prefer the port parsed from that job’s Metro/Expo output. Setup no longer writes this |
@@ -93,16 +104,16 @@ Node projects need `<path>/package.json` with a `scripts` object:
 - Package-manager commands (`npm` / `pnpm` / `yarn` / `bun`) are **disabled** if the folder is missing, `package.json` is missing, or `script` is not a key in `scripts`. The card shows a short warning. The manager is detected from `packageManager` then lockfiles at **run** time.
 - Commands with explicit `argv` (Maven `./mvnw`, `echo`, …) do not need that script key; they only need the folder to exist.
 
-This dashboard’s own `package.json` is `npm start` / `start:browser` / `start:window` / `npm test` (no extra packages).
+This dashboard’s own `package.json` is the **`locws`** CLI (`npm start` / `start:browser` / `start:window` / `npm test` for contributors; no extra packages).
 
 ## Security model
 
-1. Server binds **loopback only** (`127.0.0.1:4174`).
+1. Server binds **loopback only** (`127.0.0.1`, port 4174 or `OVERVIEW_PORT`).
 2. After setup, the server builds `COMMAND_BY_ID` from this file.
-3. `/api/run` accepts `{ id }` from the allowlist. `/api/stop`, `/api/stdin`, `/api/restart`, `/api/interact` accept that id **or** a still-running job after the command was removed. Stdin is `{ id, text }` to that process, not a shell — Console sends it from overlay buttons, not a typed line.
-4. `/api/*` with a non-loopback `Origin` is `403`.
+3. `/api/run` accepts `{ id }` from the allowlist. `/api/stop`, `/api/stdin`, `/api/restart`, `/api/interact` accept that id **or** a still-running job after the command was removed. Stdin is `{ id, text }` to that process, not a shell — Console sends it from overlay buttons, not a typed line. When a prompt is showing, only that prompt’s option values are accepted (max 200 characters); with no prompt the server returns `no_prompt`.
+4. `/api/*` with a non-loopback `Origin` is `403`. A present `Host` that is not this loopback is `403` for **API and static**. Missing Origin/Host is allowed (curl). Responses send framing-deny headers and a CSP with `script-src 'self'` (no inline scripts).
 5. `argv` and Metro method names stay on the server (`publicCommand` strips them).
 
-Do not expose `:4174` on a network interface. Anyone who can reach the port can start/stop whatever you allowlisted.
+Do not expose the dashboard port on a network interface. Anyone who can reach the port can start/stop whatever you allowlisted.
 
 How to add and probe a project in the UI: [User guide](user-guide.md).
