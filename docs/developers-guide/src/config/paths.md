@@ -14,7 +14,8 @@ Field meanings for operators: [workspace-config.md](../../../workspace-config.md
 
 | Name | Role |
 |------|------|
-| `CLI_NAME` / `NPM_PACKAGE_NAME` | `locws` |
+| `CLI_NAME` | `locws` (config/cache dir and CLI bin) |
+| `NPM_PACKAGE_NAME` | `@y-corps/locws` |
 | `appRootFrom` / `APP_ROOT` | Directory of `package.json` |
 | `isPackagedInstall` | `node_modules` path segment in `APP_ROOT` |
 | `userConfigDir` / `userCacheDir` | XDG or Windows AppData dirs named `locws` |

@@ -12,7 +12,7 @@ There is no second config format. Portal setup does not store anything else.
 | How you run | Live `workspace.json` |
 |-------------|------------------------|
 | Git clone (`npm start`) | `<repo>/workspace.json` (gitignored) |
-| `npx locws` / `npm install -g locws` | `~/.config/locws/workspace.json` (Windows `%APPDATA%\locws\workspace.json`; `$XDG_CONFIG_HOME/locws/workspace.json` if set) |
+| `npx @y-corps/locws` / `npm install -g @y-corps/locws` | `~/.config/locws/workspace.json` (Windows `%APPDATA%\locws\workspace.json`; `$XDG_CONFIG_HOME/locws/workspace.json` if set) |
 
 Startup prints `Workspace file  …` so you can see which path this process is using. Clone and packaged installs do **not** share a file. Copy the JSON yourself if you switch from a checkout to `npx`.
 
