@@ -13,7 +13,7 @@ You should hear back within **7 days**. If the report is accepted, we aim to shi
 
 ## What this project is
 
-A loopback dashboard that starts, stops, and watches **allowlisted** commands from `workspace.json` on your machine. The browser sends a command **id** only — never a shell string. The server binds to `127.0.0.1` (port **4174**, or `OVERVIEW_PORT`). Responses include `X-Frame-Options: DENY` and a CSP that forbids framing. A present `Host` (and `Origin` on `/api/*`) must be this loopback URL. The CLI command `locws upgrade` runs a hardcoded `npm install -g @y-corps/locws@latest` in the Node process the user launched — not from the browser.
+A loopback dashboard that starts, stops, and watches **allowlisted** commands from `workspace.json` on your machine. The browser sends a command **id** only — never a shell string. The server binds to `127.0.0.1` (port **4174**, or `OVERVIEW_PORT`). Responses include `X-Frame-Options: DENY` and a CSP that forbids framing. A present `Host` (and `Origin` on `/api/*`) must be this loopback URL. The CLI command `locws upgrade` runs a hardcoded `npm install -g locws@latest` in the Node process the user launched — not from the browser.
 
 ## In scope
 

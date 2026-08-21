@@ -1,22 +1,22 @@
 # npm scripts and the locws CLI
 
-Defined in [`package.json`](../package.json). The published binary is **`locws`** (`src/server.mjs`). A **git clone** starts with `npm start` / `start:browser` / `start:window` only — `--help` lists those scripts, not `locws`. The **locws CLI** (`locws start`, `--help`, `upgrade`, update notice) is for packaged installs (`npx @y-corps/locws`, `npx @y-corps/locws@beta`, `npm install -g @y-corps/locws` / `@y-corps/locws@beta`). Bare `locws` prints usage and exits 1. `--window` / `--open` opens a dedicated native WebView window and **stops the server when that window closes**. `--browser` opens the dashboard in the default browser. `locws start` only prints the URL. `npm test` runs the built-in Node test runner (no extra packages).
+Defined in [`package.json`](../package.json). The published binary is **`locws`** (`src/server.mjs`). A **git clone** starts with `npm start` / `start:browser` / `start:window` only — `--help` lists those scripts, not `locws`. The **locws CLI** (`locws start`, `--help`, `upgrade`, update notice) is for packaged installs (`npx locws`, `npx locws@beta`, `npm install -g locws` / `locws@beta`). Bare `locws` prints usage and exits 1. `--window` / `--open` opens a dedicated native WebView window and **stops the server when that window closes**. `--browser` opens the dashboard in the default browser. `locws start` only prints the URL. `npm test` runs the built-in Node test runner (no extra packages).
 
 ## Users (`locws`)
 
-After `npm install -g @y-corps/locws` (or via `npx @y-corps/locws start`). Testers of a GitHub pre-release use `npx @y-corps/locws@beta start` or `npm install -g @y-corps/locws@beta` (npm dist-tag **`beta`**). `npx @y-corps/locws` and `locws upgrade` stay on **`latest`**.
+After `npm install -g locws` (or via `npx locws start`). Testers of a GitHub pre-release use `npx locws@beta start` or `npm install -g locws@beta` (npm dist-tag **`beta`**). `npx locws` and `locws upgrade` stay on **`latest`**.
 
 | Command | Same as | What it does |
 |---------|---------|----------------|
 | `locws start` | `npm start` | Server only, prints `http://127.0.0.1:4174` (or `OVERVIEW_PORT`) |
 | `locws start --browser` | `npm run start:browser` | Same server, opens the default browser |
 | `locws start --window` | `npm run start:window` | Same server, native WebView; closing the window stops the process |
-| `locws upgrade` | *(CLI only)* | `npm install -g @y-corps/locws@latest`. Does **not** start the dashboard. Not an npm script. |
+| `locws upgrade` | *(CLI only)* | `npm install -g locws@latest`. Does **not** start the dashboard. Not an npm script. |
 | `locws --help` | | Flags, upgrade, `OVERVIEW_PORT`, and the resolved `workspace.json` path |
 
 `--open` is an alias of `--window`.
 
-A packaged start (`npx` / global, not a git clone) checks `https://registry.npmjs.org/@y-corps%2Flocws/latest` (short timeout). That is the **`latest`** dist-tag, so a `beta` publish does not nag stable installs. If a newer `x.y.z` exists (including the same `x.y.z` when the installed copy is a prerelease), stderr prints:
+A packaged start (`npx` / global, not a git clone) checks `https://registry.npmjs.org/locws/latest` (short timeout). That is the **`latest`** dist-tag, so a `beta` publish does not nag stable installs. If a newer `x.y.z` exists (including the same `x.y.z` when the installed copy is a prerelease), stderr prints:
 
 ```
 New version available: 0.2.0 (current 0.1.0)

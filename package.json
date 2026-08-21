@@ -1,5 +1,5 @@
 {
-  "name": "@y-corps/locws",
+  "name": "locws",
   "version": "0.1.1-beta.2",
   "license": "MIT",
   "description": "Localhost dashboard to run allowlisted commands across project folders",
