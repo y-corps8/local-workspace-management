@@ -14,9 +14,9 @@ User-facing flags: [npm-scripts.md](../../../npm-scripts.md).
 
 | Name | Role |
 |------|------|
-| `parseLocwsArgv` | `--help` / `-h`, first positional `start` or `upgrade`, `--browser`, `--window` / `--open` |
-| `cloneHelpText` | Clone `--help`: `npm start` / `start:browser` / `start:window` (no `locws upgrade`) |
-| `helpText` | Packaged: `locws start` / `start --browser` / `start --window` / `upgrade`. Clone (`packaged: false`): `cloneHelpText` |
+| `parseLocwsArgv` | `--help` / `-h` / `help`, `--version` / `-v` / `version`, first positional `start` or `upgrade`, `--browser`, `--window` / `--open` |
+| `cloneHelpText` | Clone `--help`: `npm start` / `start:browser` / `start:window` and `node src/server.mjs --version` (no `locws upgrade`) |
+| `helpText` | Packaged: `locws start` / `start --browser` / `start --window` / `upgrade` / `--version`. Clone (`packaged: false`): `cloneHelpText` |
 | `cloneUpgradeMessage` | Clone `upgrade`: `git pull` and `npm start` |
 | `parseSemver` / `isNewerVersion` | Numeric `x.y.z` (prerelease suffix ignored for the numbers). Same `x.y.z`: prerelease current is older than a stable latest |
 | `updateNoticeText` | `New version available…` / `Run: locws upgrade` |
@@ -32,4 +32,4 @@ User-facing flags: [npm-scripts.md](../../../npm-scripts.md).
 
 ## Tests
 
-[`test/cli/update-check.test.mjs`](../../../../test/cli/update-check.test.mjs) — semver, argv, skip/clone, clone vs packaged help, clone upgrade copy, prerelease vs same `x.y.z` latest, notice text, upgrade spawn (injected; no real global install, no live registry), scoped registry path encoding.
+[`test/cli/update-check.test.mjs`](../../../../test/cli/update-check.test.mjs) — semver, argv (including `-v` / `--version` / `version` / `help`), skip/clone, clone vs packaged help, clone upgrade copy, installed version, prerelease vs same `x.y.z` latest, notice text, upgrade spawn (injected; no real global install, no live registry), scoped registry path encoding.

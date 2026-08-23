@@ -1,6 +1,6 @@
 # User guide
 
-This page is how to use **Workspace overview**: start it, add your projects, run commands, and read the console. Setup stays on your computer.
+This page is how to use **Workspace overview**: start it, add your projects, run commands, and read the console. Setup stays on your computer. For one section per feature, see [Features](features.md).
 
 ## 1. Start
 

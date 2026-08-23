@@ -1,6 +1,6 @@
 # npm scripts and the locws CLI
 
-Defined in [`package.json`](../package.json). The published binary is **`locws`** (`src/server.mjs`). A **git clone** starts with `npm start` / `start:browser` / `start:window` only — `--help` lists those scripts, not `locws`. The **locws CLI** (`locws start`, `--help`, `upgrade`, update notice) is for packaged installs (`npx @y-corps/locws`, `npx @y-corps/locws@beta`, `npm install -g @y-corps/locws` / `@y-corps/locws@beta`). Bare `locws` prints usage and exits 1. `--window` / `--open` opens a dedicated native WebView window and **stops the server when that window closes**. `--browser` opens the dashboard in the default browser. `locws start` only prints the URL. `npm test` runs the built-in Node test runner (no extra packages).
+Defined in [`package.json`](../package.json). The published binary is **`locws`** (`src/server.mjs`). A **git clone** starts with `npm start` / `start:browser` / `start:window` only — `--help` lists those scripts, not `locws`. The **locws CLI** (`locws start`, `--help`, `--version`, `upgrade`, update notice) is for packaged installs (`npx @y-corps/locws`, `npx @y-corps/locws@beta`, `npm install -g @y-corps/locws` / `@y-corps/locws@beta`). Bare `locws` prints usage and exits 1. `--window` / `--open` opens a dedicated native WebView window and **stops the server when that window closes**. `--browser` opens the dashboard in the default browser. `locws start` only prints the URL. `npm test` runs the built-in Node test runner (no extra packages).
 
 ## Users (`locws`)
 
@@ -12,7 +12,8 @@ After `npm install -g @y-corps/locws` (or via `npx @y-corps/locws start`). Teste
 | `locws start --browser` | `npm run start:browser` | Same server, opens the default browser |
 | `locws start --window` | `npm run start:window` | Same server, native WebView; closing the window stops the process |
 | `locws upgrade` | *(CLI only)* | `npm install -g @y-corps/locws@latest`. Does **not** start the dashboard. Not an npm script. |
-| `locws --help` | | Flags, upgrade, `OVERVIEW_PORT`, and the resolved `workspace.json` path |
+| `locws --version` / `-v` | `node src/server.mjs --version` | Prints `package.json` `version` and exits. Also `locws version`. Does **not** start the dashboard. |
+| `locws --help` | `node src/server.mjs --help` | Flags, upgrade, `OVERVIEW_PORT`, and the resolved `workspace.json` path. Also `locws help`. |
 
 `--open` is an alias of `--window`.
 
@@ -43,7 +44,7 @@ Bound to 127.0.0.1 — command runner is local-only.
 Workspace file  …/workspace.json
 ```
 
-A git clone does **not** check npm for updates and does **not** run `locws upgrade` (use `git pull` and `npm start`). `--help` from a clone lists these npm scripts, not the locws CLI.
+A git clone does **not** check npm for updates and does **not** run `locws upgrade` (use `git pull` and `npm start`). `--help` from a clone lists these npm scripts and `node src/server.mjs --version`, not the locws CLI. `npm start -- --version` (or `-v`) prints the version and does not listen.
 
 ## `npm run start:browser`
 
@@ -75,7 +76,7 @@ Needs the OS WebView toolchain (macOS `swiftc`, Linux WebKitGTK/PyGObject, Windo
 
 ## What actually starts
 
-[`src/server.mjs`](../src/server.mjs) binds **`127.0.0.1` only** (`HOST` / `PORT` from [`src/config/commands.mjs`](../src/config/commands.mjs); `PORT` is 4174 unless `OVERVIEW_PORT` is set). It is not reachable on other interfaces unless you change that code. HTTP lives in [`src/http/overview-http.mjs`](../src/http/overview-http.mjs) (`createOverviewApp`). On a clone it parses `start` then `--browser` / `--window` and `listen`s. Packaged installs also parse locws `--help` / `upgrade`; a missing or unknown command prints usage and exits 1. A packaged `start` may print an update notice.
+[`src/server.mjs`](../src/server.mjs) binds **`127.0.0.1` only** (`HOST` / `PORT` from [`src/config/commands.mjs`](../src/config/commands.mjs); `PORT` is 4174 unless `OVERVIEW_PORT` is set). It is not reachable on other interfaces unless you change that code. HTTP lives in [`src/http/overview-http.mjs`](../src/http/overview-http.mjs) (`createOverviewApp`). On a clone it parses `start` then `--browser` / `--window` and `listen`s. Packaged installs also parse locws `--help` / `--version` / `upgrade`; a missing or unknown command prints usage and exits 1. `--version` / `-v` / `version` print `package.json` `version` and exit before listen. A packaged `start` may print an update notice.
 
 On listen it:
 

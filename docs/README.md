@@ -24,6 +24,7 @@ browser / native WebView window   →  public/ (UI)  →  src/server.mjs (CLI + 
 | Page | What it covers |
 |------|----------------|
 | [user-guide.md](user-guide.md) | How to use the dashboard (click-through) |
+| [features.md](features.md) | What each feature does and how to use it |
 | [npm-scripts.md](npm-scripts.md) | `locws start`, `npm start`, `start:browser`, `start:window`, `locws upgrade`, `npm test` |
 | [workspace-config.md](workspace-config.md) | `workspace.json` fields, command groups, security model |
 | [test-results.md](test-results.md) | Jest/Maven paths, snapshot merge |

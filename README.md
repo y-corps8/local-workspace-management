@@ -59,6 +59,7 @@ Binds to loopback only. It can start, stop, seed, and send Metro actions for wha
 ## Documentation
 
 - [User guide](docs/user-guide.md) — how to use the dashboard
+- [Features](docs/features.md) — what each feature does and how to use it
 - [How the pieces connect](docs/README.md)
 - [npm scripts](docs/npm-scripts.md)
 - [workspace.json](docs/workspace-config.md)
