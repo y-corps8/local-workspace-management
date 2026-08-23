@@ -108,6 +108,7 @@ function cmd(repo, script, options = {}) {
     confirmMessage,
     hint,
     interactions,
+    primary,
   } = options;
   const customArgv = Array.isArray(argv);
   return {
@@ -127,6 +128,7 @@ function cmd(repo, script, options = {}) {
     confirmMessage: confirmMessage ?? null,
     hint: hint ?? null,
     interactions: interactions ?? [],
+    primary: Boolean(primary),
   };
 }
 
@@ -271,13 +273,6 @@ export function sanitizeRawWorkspace(raw) {
     if (hasExpo || project.expoDevClientScheme) {
       next.expoDevClientScheme = String(project.expoDevClientScheme || legacyScheme).trim() || "app";
     }
-    const explicitPort = Number(project.metroPort);
-    if (Number.isFinite(explicitPort) && explicitPort > 0) {
-      next.metroPort = explicitPort;
-    } else if ((hasExpo || project.expoDevClientScheme) && raw.metroPort != null) {
-      const fromLegacy = Number(raw.metroPort);
-      if (Number.isFinite(fromLegacy) && fromLegacy > 0) next.metroPort = fromLegacy;
-    }
     if (project.health && Number.isFinite(Number(project.health.port))) {
       next.health = {
         stack: String(project.health.stack || next.name),
@@ -285,6 +280,10 @@ export function sanitizeRawWorkspace(raw) {
       };
     }
     if (project.hidden) next.hidden = true;
+    const primaryScript = String(project.primaryScript || "").trim();
+    if (primaryScript && commands.some((entry) => entry.script === primaryScript && !entry.destructive)) {
+      next.primaryScript = primaryScript;
+    }
     return next;
   });
 
@@ -302,6 +301,7 @@ function parseWorkspace(raw) {
   const commands = [];
 
   for (const project of clean.projects) {
+    const incoming = (raw.projects || []).find((item) => item?.id === project.id);
     const root = resolveUserPath(project.path, PATH_BASE);
     repos[project.id] = {
       id: project.id,
@@ -311,9 +311,10 @@ function parseWorkspace(raw) {
       root,
       ports: project.ports,
       testKind: project.testKind,
-      metroPort: Number(project.metroPort) || 8081,
+      metroPort: Number(incoming?.metroPort) || Number(raw.metroPort) || 8081,
       expoDevClientScheme: String(project.expoDevClientScheme || "app").trim() || "app",
       hidden: Boolean(project.hidden),
+      primaryScript: project.primaryScript,
     };
     repoOrder.push(project.id);
     if (project.health) {
@@ -337,6 +338,7 @@ function parseWorkspace(raw) {
           confirmTitle: entry.confirmTitle,
           confirmMessage: entry.confirmMessage,
           hint: entry.hint,
+          primary: Boolean(project.primaryScript) && project.primaryScript === entry.script,
           interactions: resolveInteractions(entry.interactions),
         })
       );
@@ -697,6 +699,7 @@ export function publicCommand(command, availability = null) {
     confirmTitle: command.confirmTitle,
     confirmMessage: command.confirmMessage,
     hint: command.hint,
+    primary: Boolean(command.primary),
     available: availability ? Boolean(availability.available) : true,
     unavailableReason: availability?.unavailableReason ?? null,
     interactions: (command.interactions ?? []).map((item) => ({

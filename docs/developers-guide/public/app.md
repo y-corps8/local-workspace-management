@@ -24,7 +24,7 @@ Assigns `hooks.*`, `applyTheme(readStoredTheme())`, `bindConsole()`, `bindSetup(
 2. If a job is still running, select the newest and `loadLogs`
 3. `connectEvents()` — `EventSource("/api/events")`
 
-Also owns: confirm modal, card ⋯ menu, dashboard drag-reorder (`PATCH /api/workspace/order`), Escape, health refresh, 15s `renderHealthChecked` timer (must not call `/api/status`).
+Also owns: confirm modal, card ⋯ menu, dashboard drag-reorder (`PATCH /api/workspace/order`), Escape, health refresh, health-pill click (`closeSetup` if Settings is open, then scroll + `is-flash`), last-test card click, **Start primaries**, project filter, `Ctrl/Cmd+J` / `Ctrl/Cmd+,` / `/`, 15s `renderHealthChecked` timer (must not call `/api/status`). Do not bind `Ctrl/Cmd+F`. Letter shortcuts skip `isTypingTarget` except Escape. `Ctrl/Cmd+,` ignores while `#setup-project-form` is visible. `Ctrl/Cmd+J` and `/` ignore while Settings is open.
 
 | Event | Client |
 |-------|--------|

@@ -25,7 +25,8 @@ export function parseLocwsArgv(argv = process.argv.slice(2)) {
   const positionals = args.filter((part) => !String(part).startsWith("-"));
   const command = positionals[0] ?? "";
   return {
-    help: args.includes("--help") || args.includes("-h"),
+    help: args.includes("--help") || args.includes("-h") || command === "help",
+    version: args.includes("--version") || args.includes("-v") || command === "version",
     start: command === "start",
     upgrade: command === "upgrade",
     browser: args.includes("--browser"),
@@ -41,6 +42,7 @@ export function cloneHelpText({ url, workspacePath } = {}) {
     `  npm start                 Start and print ${url}`,
     "  npm run start:browser     Same, open the default browser",
     "  npm run start:window      Same, native WebView (closing the window stops the server)",
+    "  node src/server.mjs --version   Print package.json version",
     "",
     `The ${CLI_NAME} CLI is for npm installs (npx ${NPM_PACKAGE_NAME}, npm install -g ${NPM_PACKAGE_NAME}).`,
     "Port: 4174, or OVERVIEW_PORT (integer 1–65535). Still binds 127.0.0.1 only.",
@@ -58,6 +60,7 @@ export function helpText({ url, workspacePath, packaged = PACKAGED_INSTALL } = {
     `  ${CLI_NAME} start --browser    Same, open the default browser`,
     `  ${CLI_NAME} start --window     Same, native WebView (closing the window stops the server)`,
     `  ${CLI_NAME} upgrade            Install the latest ${CLI_NAME} from npm (global)`,
+    `  ${CLI_NAME} --version           Print the installed version`,
     `  ${CLI_NAME} --help`,
     "",
     "Port: 4174, or OVERVIEW_PORT (integer 1–65535). Still binds 127.0.0.1 only.",

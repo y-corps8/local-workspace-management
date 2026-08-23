@@ -41,7 +41,7 @@ export function spawnGit(args, cwd) {
 }
 
 /** Current branch + whether the working tree has uncommitted changes. */
-export async function gitInfo(repoRoot) {
+export async function gitInfo(repoRoot, { skipCache = false } = {}) {
   if (!repoRoot) return { branch: "unknown", dirty: false };
   try {
     if (!fs.existsSync(path.join(repoRoot, ".git"))) {
@@ -51,7 +51,7 @@ export async function gitInfo(repoRoot) {
     return { branch: "unknown", dirty: false };
   }
   const cached = gitCache.get(repoRoot);
-  if (cached && Date.now() - cached.at < GIT_CACHE_MS) return cached.info;
+  if (!skipCache && cached && Date.now() - cached.at < GIT_CACHE_MS) return cached.info;
   const [branch, porcelain] = await Promise.all([
     spawnGit(["rev-parse", "--abbrev-ref", "HEAD"], repoRoot),
     spawnGit(["status", "--porcelain"], repoRoot),

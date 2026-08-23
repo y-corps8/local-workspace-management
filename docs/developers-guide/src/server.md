@@ -1,10 +1,10 @@
 # `src/server.mjs`
 
-Start entry (`#!/usr/bin/env node`). `package.json` `bin.locws` and the npm start scripts both run this file. Does **not** implement HTTP routes or jobs. Importing this file starts the process (`--help` / `upgrade` / missing `start` exit before `listen`).
+Start entry (`#!/usr/bin/env node`). `package.json` `bin.locws` and the npm start scripts both run this file. Does **not** implement HTTP routes or jobs. Importing this file starts the process (`--help` / `--version` / `upgrade` / missing `start` exit before `listen`).
 
-A **git clone** is not the locws CLI: `--help` lists `npm start` / `start:browser` / `start:window`; `upgrade` errors with `git pull` / `npm start`; no registry check. **Packaged** installs (`npx` / global latest or beta) get locws `--help`, `locws upgrade`, and the update notice.
+A **git clone** is not the locws CLI: `--help` lists `npm start` / `start:browser` / `start:window` and `node src/server.mjs --version`; `upgrade` errors with `git pull` / `npm start`; no registry check. **Packaged** installs (`npx` / global latest or beta) get locws `--help`, `--version`, `locws upgrade`, and the update notice.
 
-`locws start --window` / `--open` opens a native WebView via [app-window.mjs](window/app-window.md). `locws start --browser` may open the loopback URL in the default browser. `locws start` only prints the URL. Bare `locws` prints usage and exits 1.
+`locws start --window` / `--open` opens a native WebView via [app-window.mjs](window/app-window.md). `locws start --browser` may open the loopback URL in the default browser. `locws start` only prints the URL. `--version` / `-v` / `version` print `package.json` `version` and exit 0. Bare `locws` prints usage and exits 1.
 
 Binds **`127.0.0.1` only**. Port is `4174` unless `OVERVIEW_PORT` is set ([commands.md](config/commands.md) `parseOverviewPort`).
 
@@ -20,7 +20,7 @@ None (side-effect entry module).
 
 ## How it works
 
-1. `parseLocwsArgv` — `--help` / `upgrade` exit here (clone help vs locws help from `PACKAGED_INSTALL`). Missing or unknown command prints help and exits 1. `start` continues to listen.
+1. `parseLocwsArgv` — `--help` / `help` / `--version` / `-v` / `version` / `upgrade` exit here (clone help vs locws help from `PACKAGED_INSTALL`; version prints `readInstalledVersion`). Missing or unknown command prints help and exits 1. `start` continues to listen.
 2. `checkForUpdate` (packaged only) then `server.listen(PORT, HOST)`.
 3. On listen: print URL + workspace path, `setWorkspaceChangeListener` → `broadcastStatus`, `startWorkspaceWatcher`, then window or browser if flagged.
 4. `shutdown` (SIGINT / SIGTERM / window `onClosed`): `runtime.shutdownJobs()`, `closeAppWindow`, `server.close` (1.5s exit fallback).

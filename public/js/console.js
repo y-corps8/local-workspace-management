@@ -7,7 +7,9 @@ import {
   escapeHtml,
   persistConsoleCollapsed,
   persistConsoleHeight,
+  persistLogFilter,
   readStoredConsoleHeight,
+  readStoredLogFilter,
 } from "./util.js";
 
 function jobTabName(job) {
@@ -114,8 +116,29 @@ export function renderLogInteractions() {
     .join("");
 }
 
+function renderCollapsedSummary() {
+  if (!els.logSummary) return;
+  if (!state.outputCollapsed) {
+    els.logSummary.hidden = true;
+    els.logSummary.textContent = "";
+    return;
+  }
+  const running = runningJobs();
+  if (!running.length) {
+    els.logSummary.hidden = true;
+    els.logSummary.textContent = "";
+    return;
+  }
+  const first = jobTabName(running[0]);
+  const extra = running.length > 1 ? ` + ${running.length - 1} more` : "";
+  const waiting = running.some((job) => job.prompt) ? " · waiting" : "";
+  els.logSummary.hidden = false;
+  els.logSummary.textContent = `${first}${extra}${waiting}`;
+}
+
 export function applyOutputCollapsed() {
   els.logSection?.classList.toggle("is-collapsed", state.outputCollapsed);
+  renderCollapsedSummary();
   if (!els.logCollapse) return;
   els.logCollapse.setAttribute("aria-expanded", state.outputCollapsed ? "false" : "true");
   els.logCollapse.setAttribute("aria-label", state.outputCollapsed ? "Show console" : "Minimize console");
@@ -198,6 +221,7 @@ function logLineMatchesFilter(text) {
 }
 
 export function applyLogFilter() {
+  persistLogFilter(els.logFilter?.value || "");
   const query = String(els.logFilter?.value || "").trim().toLowerCase();
   els.logPanel.querySelectorAll("[data-log-text]").forEach((line) => {
     const text = line.getAttribute("data-log-text") || "";
@@ -418,7 +442,12 @@ export function bindConsoleResize() {
 
 export function bindConsole() {
   bindConsoleResize();
+  if (els.logFilter) {
+    const stored = readStoredLogFilter();
+    if (stored) els.logFilter.value = stored;
+  }
   applyOutputCollapsed();
+  applyLogFilter();
 
   els.jobTabsEl.addEventListener("click", (event) => {
     const close = event.target.closest("[data-job-close]");

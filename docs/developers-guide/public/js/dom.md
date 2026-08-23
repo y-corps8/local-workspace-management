@@ -4,7 +4,7 @@
 
 ## Exports
 
-`els` — one property per region (health, projects, console, confirm, Settings form).
+`els` — one property per region (health, `.workspace-main`, projects including `#project-filter` / `#start-primaries`, console including `#log-summary`, confirm, Settings form including export/import).
 
 ## Tests
 

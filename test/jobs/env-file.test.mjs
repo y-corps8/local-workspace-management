@@ -29,6 +29,20 @@ test("applyEnvFile does not replace dashboard PATH extras", () => {
   assert.ok(env.PATH.indexOf("/opt/homebrew/bin") < env.PATH.indexOf("/project/bin"));
 });
 
+test("applyEnvFile PATH on win32 splits on semicolon only", () => {
+  const env = applyEnvFile(
+    { PATH: "C:\\Windows\\system32" },
+    { PATH: "C:\\Users\\me\\bin;D:\\tools" },
+    "win32"
+  );
+  assert.equal(env.PATH, "C:\\Windows\\system32;C:\\Users\\me\\bin;D:\\tools");
+});
+
+test("applyEnvFile PATH on posix splits on colon", () => {
+  const env = applyEnvFile({ PATH: "/usr/bin" }, { PATH: "/project/bin:/opt/bin" }, "linux");
+  assert.equal(env.PATH, "/usr/bin:/project/bin:/opt/bin");
+});
+
 test("applyEnvFile without PATH leaves extras alone", () => {
   const env = applyEnvFile({ PATH: "/opt/homebrew/bin:/usr/bin" }, { TOKEN: "x" });
   assert.equal(env.PATH, "/opt/homebrew/bin:/usr/bin");

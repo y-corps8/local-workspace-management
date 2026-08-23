@@ -99,6 +99,13 @@ function probePort(port) {
   });
 }
 
+/** job running wins over a TCP probe; down is muted idle, not a failure. */
+export function healthReason({ jobRunning, portOpen }) {
+  if (jobRunning) return "job";
+  if (portOpen) return "port";
+  return "down";
+}
+
 export function safeStaticPath(urlPath, staticRoot = STATIC_ROOT) {
   let decoded;
   try {
@@ -172,14 +179,20 @@ export function createOverviewApp({ host = HOST, port = PORT } = {}) {
 
   async function collectHealth() {
     return Promise.all(
-      HEALTH_CHECKS.filter((check) => !REPOS[check.repo]?.hidden).map(async (check) => ({
-        ...check,
-        up: runtime.repoHasRunningLongJob(check.repo) || (await probePort(check.port)),
-      }))
+      HEALTH_CHECKS.filter((check) => !REPOS[check.repo]?.hidden).map(async (check) => {
+        const jobRunning = runtime.repoHasRunningLongJob(check.repo);
+        const portOpen = await probePort(check.port);
+        const reason = healthReason({ jobRunning, portOpen });
+        return {
+          ...check,
+          up: reason !== "down",
+          reason,
+        };
+      })
     );
   }
 
-  async function buildStatus({ light = false } = {}) {
+  async function buildStatus({ light = false, skipGitCache = false } = {}) {
     if (light && lastFullStatus) {
       const health = await collectHealth();
       const jobsPublic = [...jobs.values()].map(publicJob);
@@ -214,7 +227,7 @@ export function createOverviewApp({ host = HOST, port = PORT } = {}) {
       REPO_ORDER.map(async (repoId) => {
         const repo = REPOS[repoId];
         const pkg = pkgByRepo[repoId];
-        gitByRepo[repoId] = pkg.exists ? await gitInfo(repo.root) : { branch: "missing", dirty: false };
+        gitByRepo[repoId] = pkg.exists ? await gitInfo(repo.root, { skipCache: skipGitCache }) : { branch: "missing", dirty: false };
       })
     );
     const repos = REPO_ORDER.map((repoId) => {
@@ -230,6 +243,7 @@ export function createOverviewApp({ host = HOST, port = PORT } = {}) {
         root: repo.root,
         ports: repo.ports,
         hidden: Boolean(repo.hidden),
+        primaryScript: repo.primaryScript,
         git: gitByRepo[repoId],
         running: [...jobs.values()]
           .filter((job) => job.repo === repoId && job.status === "running")
@@ -265,7 +279,7 @@ export function createOverviewApp({ host = HOST, port = PORT } = {}) {
     }
 
     if (req.method === "GET" && url.pathname === "/api/status") {
-      sendJson(res, 200, await buildStatus());
+      sendJson(res, 200, await buildStatus({ skipGitCache: true }));
       return;
     }
 

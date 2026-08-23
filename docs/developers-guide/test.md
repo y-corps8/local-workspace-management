@@ -14,11 +14,12 @@ Sets `OVERVIEW_SKIP_WORKSPACE_LOAD=1` before any test file imports [`src/config/
 
 | File | Module | Asserts |
 |------|--------|---------|
-| [`config/commands.test.mjs`](../../test/config/commands.test.mjs) | [commands.mjs](src/config/commands.md) | Duplicate project/command ids rejected; unique scripts accepted; custom `argv` available without `package.json`; package-manager commands need the script key; watch ignores null filename and `.workspace.*.tmp`; `parseOverviewPort` |
+| [`config/commands.test.mjs`](../../test/config/commands.test.mjs) | [commands.mjs](src/config/commands.md) | Duplicate project/command ids rejected; unique scripts accepted; leftover `role` / `workspaceRoot` / `metroPort` / `tooling` migrated and dropped; custom `argv` available without `package.json`; package-manager commands need the script key; watch ignores null filename and `.workspace.*.tmp`; `parseOverviewPort` |
 | [`config/paths.test.mjs`](../../test/config/paths.test.mjs) | [paths.mjs](src/config/paths.md) | Clone vs `node_modules` vs `OVERVIEW_DATA_DIR`; Windows `APPDATA`; `appRootFrom` walks up to `package.json` |
 | [`cli/update-check.test.mjs`](../../test/cli/update-check.test.mjs) | [update-check.mjs](src/cli/update-check.md) | Semver, prerelease vs same `x.y.z` latest, CLI flags, skip clone, clone vs packaged help, clone upgrade copy, upgrade argv/spawn (no live registry, no global install) |
-| [`config/package-manager.test.mjs`](../../test/config/package-manager.test.mjs) | [package-manager.mjs](src/config/package-manager.md) | `packageManager` field vs lockfiles; argv per manager; `guessJestJson`; Windows `.cmd` / `bun.exe` / `mvnw.cmd` |
-| [`jobs/env-file.test.mjs`](../../test/jobs/env-file.test.mjs) | [env-file.mjs](src/jobs/env-file.md) | Comments, `export`, quotes, inline comments; PATH append; denylist |
+| [`config/package-manager.test.mjs`](../../test/config/package-manager.test.mjs) | [package-manager.mjs](src/config/package-manager.md) | `packageManager` field vs lockfiles; argv per manager; `guessJestJson`; Windows `.cmd` / `npx.cmd` / `bun.exe` / `mvnw.cmd` |
+| [`jobs/env-file.test.mjs`](../../test/jobs/env-file.test.mjs) | [env-file.mjs](src/jobs/env-file.md) | Comments, `export`, quotes, inline comments; PATH append (posix colon / win32 semicolon); denylist |
+| [`jobs/git-info.test.mjs`](../../test/jobs/git-info.test.mjs) | [git-info.mjs](src/jobs/git-info.md) | 8s cache stays clean; `skipCache` sees dirty |
 | [`jobs/job-logs.test.mjs`](../../test/jobs/job-logs.test.mjs) | [job-logs.mjs](src/jobs/job-logs.md) | Newlines, partial buffer, CR replace vs CRLF, `MAX_PARTIAL`, per-stream buffers, `compactLogBatch`, `createLogBatcher` flush/clear |
 | [`jobs/metro.test.mjs`](../../test/jobs/metro.test.mjs) | [metro.mjs](src/jobs/metro.md) | Localhost URL, `exp://`, busy-port; ignores stack-trace URLs |
 | [`jobs/prompt.test.mjs`](../../test/jobs/prompt.test.mjs) | [prompt.mjs](src/jobs/prompt.md) | Prisma/npm/inquirer/numbered lists; ANSI; ignores Expo help, free-text, and npm/Gradle `>` logs; `publicPrompt` caps |

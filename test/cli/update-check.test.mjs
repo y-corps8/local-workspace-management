@@ -1,6 +1,9 @@
 import assert from "node:assert/strict";
 import { EventEmitter } from "node:events";
+import fs from "node:fs";
+import path from "node:path";
 import { test } from "node:test";
+import { fileURLToPath } from "node:url";
 import {
   checkForUpdate,
   cloneHelpText,
@@ -10,6 +13,7 @@ import {
   isNewerVersion,
   parseLocwsArgv,
   parseSemver,
+  readInstalledVersion,
   runUpgrade,
   updateNoticeText,
   upgradeArgv,
@@ -45,9 +49,10 @@ test("updateNoticeText tells the user to run locws upgrade", () => {
   );
 });
 
-test("parseLocwsArgv reads help, upgrade, and start flags", () => {
+test("parseLocwsArgv reads help, version, upgrade, and start flags", () => {
   assert.deepEqual(parseLocwsArgv([]), {
     help: false,
+    version: false,
     start: false,
     upgrade: false,
     browser: false,
@@ -55,6 +60,7 @@ test("parseLocwsArgv reads help, upgrade, and start flags", () => {
   });
   assert.deepEqual(parseLocwsArgv(["--help"]), {
     help: true,
+    version: false,
     start: false,
     upgrade: false,
     browser: false,
@@ -62,13 +68,55 @@ test("parseLocwsArgv reads help, upgrade, and start flags", () => {
   });
   assert.deepEqual(parseLocwsArgv(["-h"]), {
     help: true,
+    version: false,
     start: false,
+    upgrade: false,
+    browser: false,
+    window: false,
+  });
+  assert.deepEqual(parseLocwsArgv(["help"]), {
+    help: true,
+    version: false,
+    start: false,
+    upgrade: false,
+    browser: false,
+    window: false,
+  });
+  assert.deepEqual(parseLocwsArgv(["-v"]), {
+    help: false,
+    version: true,
+    start: false,
+    upgrade: false,
+    browser: false,
+    window: false,
+  });
+  assert.deepEqual(parseLocwsArgv(["--version"]), {
+    help: false,
+    version: true,
+    start: false,
+    upgrade: false,
+    browser: false,
+    window: false,
+  });
+  assert.deepEqual(parseLocwsArgv(["version"]), {
+    help: false,
+    version: true,
+    start: false,
+    upgrade: false,
+    browser: false,
+    window: false,
+  });
+  assert.deepEqual(parseLocwsArgv(["start", "--version"]), {
+    help: false,
+    version: true,
+    start: true,
     upgrade: false,
     browser: false,
     window: false,
   });
   assert.deepEqual(parseLocwsArgv(["upgrade"]), {
     help: false,
+    version: false,
     start: false,
     upgrade: true,
     browser: false,
@@ -76,6 +124,7 @@ test("parseLocwsArgv reads help, upgrade, and start flags", () => {
   });
   assert.deepEqual(parseLocwsArgv(["--browser"]), {
     help: false,
+    version: false,
     start: false,
     upgrade: false,
     browser: true,
@@ -83,6 +132,7 @@ test("parseLocwsArgv reads help, upgrade, and start flags", () => {
   });
   assert.deepEqual(parseLocwsArgv(["start"]), {
     help: false,
+    version: false,
     start: true,
     upgrade: false,
     browser: false,
@@ -90,6 +140,7 @@ test("parseLocwsArgv reads help, upgrade, and start flags", () => {
   });
   assert.deepEqual(parseLocwsArgv(["start", "--browser"]), {
     help: false,
+    version: false,
     start: true,
     upgrade: false,
     browser: true,
@@ -97,6 +148,7 @@ test("parseLocwsArgv reads help, upgrade, and start flags", () => {
   });
   assert.deepEqual(parseLocwsArgv(["start", "--window"]), {
     help: false,
+    version: false,
     start: true,
     upgrade: false,
     browser: false,
@@ -104,11 +156,19 @@ test("parseLocwsArgv reads help, upgrade, and start flags", () => {
   });
   assert.deepEqual(parseLocwsArgv(["start", "--open"]), {
     help: false,
+    version: false,
     start: true,
     upgrade: false,
     browser: false,
     window: true,
   });
+});
+
+test("readInstalledVersion returns this package.json version", () => {
+  const pkgPath = path.join(path.dirname(fileURLToPath(import.meta.url)), "../../package.json");
+  const pkg = JSON.parse(fs.readFileSync(pkgPath, "utf8"));
+  assert.equal(readInstalledVersion(), pkg.version);
+  assert.match(pkg.version, /^\d+\.\d+\.\d+/);
 });
 
 test("helpText lists locws upgrade and the workspace path when packaged", () => {
@@ -121,6 +181,7 @@ test("helpText lists locws upgrade and the workspace path when packaged", () => 
   assert.match(text, /locws start --browser/);
   assert.match(text, /locws start --window/);
   assert.match(text, /locws upgrade/);
+  assert.match(text, /locws --version/);
   assert.match(text, /OVERVIEW_PORT/);
   assert.match(text, /\/tmp\/workspace\.json/);
   assert.doesNotMatch(text, /^ {2}locws {2,}/m);
@@ -140,6 +201,7 @@ test("helpText on a clone lists npm start scripts and not locws upgrade", () => 
   assert.match(text, /npm start/);
   assert.match(text, /npm run start:browser/);
   assert.match(text, /npm run start:window/);
+  assert.match(text, /node src\/server\.mjs --version/);
   assert.match(text, /OVERVIEW_PORT/);
   assert.match(text, /\/tmp\/workspace\.json/);
   assert.match(text, /npx @y-corps\/locws/);

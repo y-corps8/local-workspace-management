@@ -50,10 +50,12 @@ test("jestJson only for jest runners", () => {
 
 test("Windows package-manager bins use .cmd / bun.exe", () => {
   assert.equal(spawnFileForBin("npm", "win32"), "npm.cmd");
+  assert.equal(spawnFileForBin("npx", "win32"), "npx.cmd");
   assert.equal(spawnFileForBin("pnpm", "win32"), "pnpm.cmd");
   assert.equal(spawnFileForBin("yarn", "win32"), "yarn.cmd");
   assert.equal(spawnFileForBin("bun", "win32"), "bun.exe");
   assert.equal(spawnFileForBin("npm", "darwin"), "npm");
+  assert.equal(spawnFileForBin("npx", "darwin"), "npx");
   assert.deepEqual(resolveSpawnArgv(["npm", "test"], "win32"), ["npm.cmd", "test"]);
   assert.deepEqual(resolveSpawnArgv(["./mvnw", "test"], "win32"), ["mvnw.cmd", "test"]);
   assert.deepEqual(resolveSpawnArgv(["mvnw", "test"], "win32"), ["mvnw.cmd", "test"]);

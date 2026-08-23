@@ -2,7 +2,7 @@
 /**
  * Start entry (npm start / locws start) and locws bin. Binds 127.0.0.1 (OVERVIEW_PORT, default 4174).
  * HTTP lives in http/overview-http.mjs. locws CLI help/upgrade/update are packaged-only.
- * Packaged `locws` needs a subcommand (`start`, `upgrade`, or `--help`).
+ * Packaged `locws` needs a subcommand (`start`, `upgrade`, `--help`, or `--version`).
  */
 import { spawn } from "node:child_process";
 import {
@@ -17,7 +17,14 @@ import { PACKAGED_INSTALL } from "./config/paths.mjs";
 import { closeAppWindow, openAppWindow } from "./window/app-window.mjs";
 import { openUrlArgs } from "./cli/open-external.mjs";
 import { createOverviewApp } from "./http/overview-http.mjs";
-import { checkForUpdate, helpText, parseLocwsArgv, runUpgrade, updateNoticeText } from "./cli/update-check.mjs";
+import {
+  checkForUpdate,
+  helpText,
+  parseLocwsArgv,
+  readInstalledVersion,
+  runUpgrade,
+  updateNoticeText,
+} from "./cli/update-check.mjs";
 
 const { server, runtime, broadcastStatus } = createOverviewApp({ host: HOST, port: PORT });
 
@@ -64,6 +71,15 @@ async function main() {
   });
   if (cli.help) {
     console.log(usage);
+    process.exit(0);
+  }
+  if (cli.version) {
+    const version = readInstalledVersion();
+    if (!version) {
+      console.error("Could not read package.json version.");
+      process.exit(1);
+    }
+    console.log(version);
     process.exit(0);
   }
   if (cli.upgrade) {

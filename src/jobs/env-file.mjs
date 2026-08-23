@@ -51,11 +51,16 @@ function isBlockedEnvKey(key) {
   return false;
 }
 
+function pathDelimiter(platform = process.platform) {
+  return platform === "win32" ? path.win32.delimiter : path.posix.delimiter;
+}
+
 /**
  * Copy parsed .env onto spawn env. PATH from the file is appended, never replaced,
  * so Homebrew / ~/.local/bin extras stay. Loader-injection keys are skipped.
+ * Extra PATH is split on `;` on Windows (drive letters stay intact) and `:` elsewhere.
  */
-export function applyEnvFile(env, parsed) {
+export function applyEnvFile(env, parsed, platform = process.platform) {
   const next = { ...env };
   const extraPath = parsed?.PATH;
   for (const [key, value] of Object.entries(parsed || {})) {
@@ -64,11 +69,11 @@ export function applyEnvFile(env, parsed) {
     next[key] = value;
   }
   if (extraPath) {
-    const delim = path.delimiter;
+    const delim = pathDelimiter(platform);
     const parts = String(next.PATH || "")
       .split(delim)
       .filter(Boolean);
-    for (const part of String(extraPath).split(/[:;]/).filter(Boolean)) {
+    for (const part of String(extraPath).split(delim).filter(Boolean)) {
       if (!parts.includes(part)) parts.push(part);
     }
     next.PATH = parts.join(delim);

@@ -19,15 +19,21 @@ export const state = {
   lastInteractionKey: "",
   lastPromptKey: "",
   healthRefreshBusy: false,
+  healthFlashRepoId: null,
   cardDragId: null,
+  projectFilter: "",
   setupDraft: null,
   setupEditingIndex: null,
   setupScriptRows: [],
+  setupPrimaryScript: "",
+  setupPrimaryIndex: null,
   setupProbedScheme: "",
   setupAddMode: false,
+  setupFromDashboard: false,
   setupIsFirstRun: false,
   setupProbeOk: false,
   setupDragIndex: null,
+  setupScriptDragIndex: null,
 };
 
 export function commandById(id) {

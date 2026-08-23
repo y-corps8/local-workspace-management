@@ -6,6 +6,7 @@ Thanks for considering a contribution. **Bugs, features, and pull requests** go 
 
 - **Node.js 20.6+** (`npm test` uses `node --import`)
 - No extra npm packages, bundler, or Electron. Do not add a client-side build step unless the project explicitly needs one.
+- `--window` / `npm run start:window` needs optional OS WebView tools; see [README Requirements](README.md#requirements). `npm start` in a browser does not.
 
 ## Setup
 

@@ -30,12 +30,10 @@ export function cloneWorkspace(raw) {
         health: project.health ? { ...project.health } : undefined,
       };
       delete next.role;
+      delete next.metroPort;
       const hasExpo = (next.commands || []).some((command) => command.interactions === "expo");
       if (hasExpo || project.expoDevClientScheme) {
         next.expoDevClientScheme = String(project.expoDevClientScheme || legacyScheme).trim() || legacyScheme;
-      }
-      if (project.metroPort != null && Number(project.metroPort) > 0) {
-        next.metroPort = Number(project.metroPort);
       }
       if (project.hidden) next.hidden = true;
       else delete next.hidden;
@@ -60,13 +58,24 @@ function setProbeStatus(el, ok, text) {
   el.textContent = text || "";
 }
 
+function setSettingsOpen(open) {
+  els.setupPanel.hidden = !open;
+  els.layoutEl?.classList.toggle("is-settings", open);
+  if (open && els.workspaceMain) els.workspaceMain.scrollTop = 0;
+}
+
 export function closeSetup() {
-  els.setupPanel.hidden = true;
+  setSettingsOpen(false);
+  els.setupPanel.classList.remove("is-form");
   state.setupDraft = null;
   state.setupEditingIndex = null;
   state.setupScriptRows = [];
+  state.setupPrimaryScript = "";
+  state.setupPrimaryIndex = null;
+  state.setupScriptDragIndex = null;
   state.setupProbedScheme = "";
   state.setupAddMode = false;
+  state.setupFromDashboard = false;
   state.setupIsFirstRun = false;
   els.setupProjectForm.hidden = true;
   els.setupStepProjects.classList.remove("is-form-open");
@@ -86,6 +95,118 @@ function applyRowGroup(row, group) {
 
 function isCustomRow(row) {
   return Boolean(row?.custom) || Array.isArray(row?.argv);
+}
+
+/** Probe succeeded, or Edit with the saved path still in the field. */
+function formPathReady() {
+  if (state.setupProbeOk) return true;
+  if (state.setupEditingIndex == null) return false;
+  const saved = state.setupDraft?.projects?.[state.setupEditingIndex];
+  if (!saved) return false;
+  const current = String(els.setupPath?.value || "").trim();
+  return Boolean(current) && current === String(saved.path || "").trim();
+}
+
+function ensureSetupPrimary() {
+  const eligible = state.setupScriptRows
+    .map((row, index) => ({ row, index }))
+    .filter(({ row }) => row.selected && !row.destructive);
+  if (!eligible.length) {
+    state.setupPrimaryScript = "";
+    state.setupPrimaryIndex = null;
+    return;
+  }
+  const byScript = eligible.find(({ row }) => row.script && row.script === state.setupPrimaryScript);
+  if (byScript) {
+    state.setupPrimaryIndex = byScript.index;
+    return;
+  }
+  const byIndex = eligible.find(({ index }) => index === state.setupPrimaryIndex);
+  if (byIndex) {
+    if (byIndex.row.script) state.setupPrimaryScript = byIndex.row.script;
+    return;
+  }
+  state.setupPrimaryScript = "";
+  state.setupPrimaryIndex = null;
+}
+
+function rowIsPrimary(row, index) {
+  if (!row.selected || row.destructive) return false;
+  if (state.setupPrimaryIndex === index) return true;
+  return Boolean(row.script) && row.script === state.setupPrimaryScript && state.setupPrimaryIndex == null;
+}
+
+function renderSetupScriptGroup(row, index) {
+  return `<label class="setup-script-group-field">
+            <span>Group</span>
+            <input type="text" data-script-group="${index}" value="${escapeHtml(rowGroup(row))}" spellcheck="false" aria-label="Group for ${escapeHtml(row.label || row.script || "command")}" placeholder="run, lint, …" />
+          </label>`;
+}
+
+function renderSetupScriptPrimary(row, index) {
+  const eligible = row.selected && !row.destructive;
+  const radio = `<label class="setup-script-primary${eligible ? "" : " is-disabled"}">
+            <input type="radio" name="setup-primary" data-script-primary="${index}" ${rowIsPrimary(row, index) ? "checked" : ""} ${eligible ? "" : "disabled"} /> Primary
+          </label>`;
+  if (eligible) return radio;
+  const tip = !row.selected
+    ? "Select this command to make it primary"
+    : "Destructive commands can’t be primary";
+  return `<span class="cmd-wrap setup-script-primary-wrap">
+            ${radio}
+            <div class="hover-tip" role="tooltip">${escapeHtml(tip)}</div>
+          </span>`;
+}
+
+function renderSetupScriptRuntime(row, index) {
+  return `<div class="setup-script-seg" role="radiogroup" aria-label="How it runs">
+            <label class="setup-script-seg-opt${!row.longRunning ? " is-on" : ""}">
+              <input type="radio" name="setup-runtime-${index}" data-script-runtime="${index}" value="once" ${row.longRunning ? "" : "checked"} />
+              Once
+            </label>
+            <label class="setup-script-seg-opt is-long${row.longRunning ? " is-on" : ""}">
+              <input type="radio" name="setup-runtime-${index}" data-script-runtime="${index}" value="long" ${row.longRunning ? "checked" : ""} />
+              Long-running
+            </label>
+          </div>`;
+}
+
+function renderSetupScriptSafety(row, index) {
+  return `<div class="setup-script-seg" role="radiogroup" aria-label="Safety">
+            <label class="setup-script-seg-opt${!row.destructive ? " is-on" : ""}">
+              <input type="radio" name="setup-safety-${index}" data-script-safety="${index}" value="safe" ${row.destructive ? "" : "checked"} />
+              Safe
+            </label>
+            <label class="setup-script-seg-opt is-danger${row.destructive ? " is-on" : ""}">
+              <input type="radio" name="setup-safety-${index}" data-script-safety="${index}" value="destructive" ${row.destructive ? "checked" : ""} />
+              Destructive
+            </label>
+          </div>`;
+}
+
+function renderSetupScriptFlags(row, index) {
+  return `${renderSetupScriptRuntime(row, index)}
+          ${renderSetupScriptSafety(row, index)}
+          ${renderSetupScriptPrimary(row, index)}`;
+}
+
+function renderSetupScriptDelete(index) {
+  return `<button type="button" class="btn btn-icon btn-icon-danger" data-script-remove="${index}" aria-label="Delete custom command" title="Delete custom command">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+              <path d="M3 6h18" />
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
+              <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+              <line x1="10" y1="11" x2="10" y2="17" />
+              <line x1="14" y1="11" x2="14" y2="17" />
+            </svg>
+          </button>`;
+}
+
+function renderSetupScriptRail(row, index, custom) {
+  return `<div class="setup-script-rail">
+            ${renderSetupScriptGroup(row, index)}
+            ${custom ? renderSetupScriptDelete(index) : ""}
+          </div>`;
 }
 
 function uniqueScriptId(base, used) {
@@ -110,67 +231,88 @@ function emptyCustomRow() {
   };
 }
 
-function renderSetupScriptFlags(row, index) {
-  return `<label class="setup-script-group-field">
-            <span>Group</span>
-            <input type="text" data-script-group="${index}" value="${escapeHtml(rowGroup(row))}" spellcheck="false" aria-label="Group for ${escapeHtml(row.label || row.script || "command")}" placeholder="run, lint, …" />
-          </label>
-          <label><input type="checkbox" data-script-long="${index}" ${row.longRunning ? "checked" : ""} /> Long-running</label>
-          <label><input type="checkbox" data-script-destructive="${index}" ${row.destructive ? "checked" : ""} /> Destructive</label>`;
+function renderSetupScriptLead(row, index, drag) {
+  const name = row.label || row.script || "command";
+  const handle = drag
+    ? `<span class="drag-handle" data-script-drag="${index}" draggable="true" role="button" tabindex="0" aria-label="Reorder ${escapeHtml(name)}"></span>`
+    : "";
+  return `<div class="setup-script-lead">
+        ${handle}
+        <input type="checkbox" data-script-check="${index}" ${row.selected ? "checked" : ""} aria-label="Show ${escapeHtml(name)}" />
+      </div>`;
 }
 
-function renderSetupScriptRow(row, index) {
+function renderSetupScriptRow(row, index, drag) {
+  const hint = row.hint ? `<p class="setup-script-hint">${escapeHtml(row.hint)}</p>` : "";
   if (isCustomRow(row)) {
-    const name = row.label || "custom command";
-    return `<div class="setup-script is-custom">
-        <div class="setup-script-main">
-          <input type="checkbox" data-script-check="${index}" ${row.selected ? "checked" : ""} aria-label="Show ${escapeHtml(name)}" />
-          <div class="setup-script-custom-body">
-            <div class="setup-script-custom-fields">
-              <label class="setup-script-group-field">
-                <span>Command name</span>
-                <input type="text" data-script-label="${index}" value="${escapeHtml(row.label || "")}" placeholder="run" aria-label="Command name" />
-              </label>
-              <label class="setup-script-group-field">
-                <span>Command</span>
-                <input type="text" data-script-argv="${index}" value="${escapeHtml(row.argvLine || "")}" spellcheck="false" placeholder="echo hello" aria-label="Command" />
-              </label>
-            </div>
-            <div class="setup-script-custom-meta">
-              ${renderSetupScriptFlags(row, index)}
-              <button type="button" class="btn btn-compact" data-script-remove="${index}">Remove</button>
-            </div>
+    return `<div class="setup-script is-custom" data-script-index="${index}">
+        ${renderSetupScriptLead(row, index, drag)}
+        <div class="setup-script-body">
+          <div class="setup-script-identity">
+            <label class="setup-script-group-field">
+              <span>Command name</span>
+              <input type="text" data-script-label="${index}" value="${escapeHtml(row.label || "")}" placeholder="run" aria-label="Command name" />
+            </label>
+            <label class="setup-script-group-field">
+              <span>Command</span>
+              <input type="text" data-script-argv="${index}" value="${escapeHtml(row.argvLine || "")}" spellcheck="false" placeholder="echo hello" aria-label="Command" />
+            </label>
+          </div>
+          <div class="setup-script-flags">
+            ${renderSetupScriptFlags(row, index)}
           </div>
         </div>
+        ${renderSetupScriptRail(row, index, true)}
+        ${hint}
       </div>`;
   }
-  return `<div class="setup-script">
-        <div class="setup-script-main">
-          <input type="checkbox" data-script-check="${index}" ${row.selected ? "checked" : ""} aria-label="Show ${escapeHtml(row.script)}" />
-          <code title="${escapeHtml(row.script)}">${escapeHtml(row.script)}</code>
-          ${renderSetupScriptFlags(row, index)}
+  return `<div class="setup-script" data-script-index="${index}">
+        ${renderSetupScriptLead(row, index, drag)}
+        <div class="setup-script-body">
+          <div class="setup-script-identity">
+            <code title="${escapeHtml(row.script)}">${escapeHtml(row.script)}</code>
+          </div>
+          <div class="setup-script-flags">
+            ${renderSetupScriptFlags(row, index)}
+          </div>
         </div>
+        ${renderSetupScriptRail(row, index, false)}
+        ${hint}
       </div>`;
 }
 
-function renderSetupScripts() {
-  if (!state.setupScriptRows.length) {
-    els.setupScripts.innerHTML = "";
-    return;
-  }
-  els.setupScripts.innerHTML = orderGroups(state.setupScriptRows)
+function renderGroupedScriptRows(items, drag) {
+  return orderGroups(items.map(({ row }) => row))
     .map((group) => {
-      const items = state.setupScriptRows
-        .map((row, index) => ({ row, index }))
-        .filter(({ row }) => rowGroup(row) === group);
-      if (!items.length) return "";
-      const body = items.map(({ row, index }) => renderSetupScriptRow(row, index)).join("");
+      const groupItems = items.filter(({ row }) => rowGroup(row) === group);
+      if (!groupItems.length) return "";
+      const body = groupItems.map(({ row, index }) => renderSetupScriptRow(row, index, drag)).join("");
       return `<div class="setup-script-group">
         <div class="setup-script-group-label">${escapeHtml(groupLabel(group))}</div>
         ${body}
       </div>`;
     })
     .join("");
+}
+
+function renderSetupScripts() {
+  ensureSetupPrimary();
+  const indexed = state.setupScriptRows.map((row, index) => ({ row, index }));
+  const selected = indexed.filter(({ row }) => row.selected);
+  const available = indexed.filter(({ row }) => !row.selected);
+  if (!els.setupScripts) return;
+  els.setupScripts.innerHTML = selected.length ? renderGroupedScriptRows(selected, true) : "";
+  if (!els.setupScriptsAvailable) return;
+  if (!available.length) {
+    els.setupScriptsAvailable.innerHTML = "";
+    els.setupScriptsAvailable.hidden = true;
+    return;
+  }
+  els.setupScriptsAvailable.hidden = false;
+  els.setupScriptsAvailable.innerHTML = `<details class="setup-available">
+      <summary>Available (${available.length})</summary>
+      <div class="setup-scripts">${renderGroupedScriptRows(available, false)}</div>
+    </details>`;
 }
 
 function commandToRow(command, selected) {
@@ -248,7 +390,7 @@ function customRowState(row) {
 function syncNoPkgUi(hasPackageJson) {
   const showWarning = state.setupProbeOk && !hasPackageJson;
   els.setupNoPkg.hidden = !showWarning;
-  els.setupAddCustomWrap.hidden = !state.setupProbeOk;
+  els.setupAddCustomWrap.hidden = !formPathReady();
 }
 
 function hasCompleteCommand() {
@@ -267,7 +409,7 @@ function hasCompleteCommand() {
 
 function syncCommitButton() {
   const hasName = Boolean(els.setupName.value.trim() || els.setupId.value.trim());
-  els.setupCommitProject.disabled = !(state.setupProbeOk && hasName && hasCompleteCommand());
+  els.setupCommitProject.disabled = !(formPathReady() && hasName && hasCompleteCommand());
 }
 
 function syncAppearanceFields() {
@@ -278,8 +420,6 @@ function syncAppearanceFields() {
 
 function syncSetupChrome() {
   const formOpen = !els.setupProjectForm.hidden;
-  const formLead =
-    "Add a repo by folder path, then Probe. You do not need that folder open in the editor.";
   if (!formOpen) {
     els.setupTitle.textContent = "Settings";
     els.setupLead.textContent =
@@ -289,11 +429,12 @@ function syncSetupChrome() {
   if (state.setupEditingIndex != null) {
     const project = state.setupDraft?.projects?.[state.setupEditingIndex];
     els.setupTitle.textContent = `Edit ${project?.name || project?.id || ""}`.trim();
-    els.setupLead.textContent = formLead;
+    els.setupLead.textContent =
+      "Change the folder, commands, or name. Probe again if the path or scripts changed.";
     return;
   }
   els.setupTitle.textContent = "Add a project";
-  els.setupLead.textContent = formLead;
+  els.setupLead.textContent = "Browse or paste a folder, then Probe. Commands start in that folder.";
 }
 
 function syncTestOverviewFields() {
@@ -316,6 +457,7 @@ function syncSetupAddButton() {
   if (els.setupStepRoot) els.setupStepRoot.hidden = formOpen;
   els.setupStepProjects.hidden = false;
   els.setupStepProjects.classList.toggle("is-form-open", formOpen);
+  els.setupPanel.classList.toggle("is-form", formOpen);
   syncAppearanceFields();
   syncTestOverviewFields();
   syncSetupChrome();
@@ -326,7 +468,7 @@ function renderSetupList() {
   if (!projects.length) {
     els.setupProjectList.innerHTML = `<div class="setup-project-list-empty">
       <p class="setup-project-list-empty-title">No projects yet</p>
-      <p class="setup-project-list-empty-copy">Repos you add will show here so you can hide, edit, or reorder them. Use <strong>Add a project</strong> below to browse a folder and pick commands.</p>
+      <p class="setup-project-list-empty-copy">Repos you add will show here so you can hide, edit, or reorder them. Use <strong>Add project</strong> below to browse a folder and pick commands.</p>
     </div>`;
     syncSetupAddButton();
     return;
@@ -338,7 +480,7 @@ function renderSetupList() {
       return `<article class="setup-project-row${hidden ? " is-hidden" : ""}" data-setup-index="${index}">
         <span class="drag-handle" data-setup-drag="${index}" draggable="true" role="button" tabindex="0" aria-label="Reorder ${escapeHtml(project.name || project.id)}"></span>
         <div class="setup-project-row-copy">
-          <strong>${escapeHtml(project.name || project.id)}</strong>
+          <strong class="setup-project-row-title">${escapeHtml(project.name || project.id)}</strong>
           <span>${escapeHtml(project.path)} · ${count} command${count === 1 ? "" : "s"}</span>
         </div>
         <label class="setup-check setup-project-visible">
@@ -355,17 +497,27 @@ function renderSetupList() {
   syncSetupAddButton();
 }
 
+function syncDescriptionCount() {
+  if (!els.setupDescriptionCount) return;
+  const length = String(els.setupDescription.value || "").length;
+  els.setupDescriptionCount.textContent = `${length} / 50`;
+}
+
 function resetProjectForm() {
   state.setupEditingIndex = null;
   state.setupScriptRows = [];
+  state.setupPrimaryScript = "";
+  state.setupPrimaryIndex = null;
+  state.setupScriptDragIndex = null;
   state.setupProbedScheme = "";
   state.setupProbeOk = false;
   els.setupFormTitle.textContent = "Add a project";
-  els.setupCommitProject.textContent = "Add Project";
+  els.setupCommitProject.textContent = "Add project";
   els.setupPath.value = "";
   els.setupId.value = "";
   els.setupName.value = "";
   els.setupDescription.value = "";
+  if (els.setupAdvanced) els.setupAdvanced.open = false;
   els.setupHealthPort.value = "";
   els.setupTestKind.value = "jest";
   els.setupPath.classList.remove("is-error");
@@ -374,6 +526,7 @@ function resetProjectForm() {
   syncTestOverviewFields();
   syncNoPkgUi(true);
   syncCommitButton();
+  syncDescriptionCount();
 }
 
 export function openProjectForm(index = null) {
@@ -393,15 +546,21 @@ export function openProjectForm(index = null) {
   els.setupId.value = project.id || "";
   els.setupName.value = project.name || "";
   els.setupDescription.value = project.description || "";
+  if (els.setupAdvanced) els.setupAdvanced.open = true;
   els.setupHealthPort.value = project.health?.port ?? "";
   els.setupTestKind.value = project.testKind === "maven" ? "maven" : "jest";
   state.setupScriptRows = (project.commands || []).map((command) => commandToRow(command, true));
+  state.setupPrimaryScript = String(project.primaryScript || "").trim();
+  state.setupPrimaryIndex = state.setupScriptRows.findIndex((row) => row.script === state.setupPrimaryScript);
+  if (state.setupPrimaryIndex < 0) state.setupPrimaryIndex = null;
   state.setupProbedScheme = String(project.expoDevClientScheme || "app").trim() || "app";
   state.setupProbeOk = false;
   setProbeStatus(els.setupPathStatus, true, "");
   renderSetupScripts();
   syncTestOverviewFields();
+  syncNoPkgUi(true);
   syncCommitButton();
+  syncDescriptionCount();
   syncSetupAddButton();
   if (els.setupPath.value.trim()) probeCurrentPath();
 }
@@ -410,7 +569,7 @@ function collectProjectFromForm() {
   const projectPath = els.setupPath.value.trim();
   let id = els.setupId.value.trim();
   const name = els.setupName.value.trim();
-  if (!projectPath || !state.setupProbeOk) throw new Error("Choose a project path, then Probe.");
+  if (!projectPath || !formPathReady()) throw new Error("Choose a project path, then Probe.");
   if (!name && !id) throw new Error("Name is required.");
   if (!id) {
     id = slugifyId(name);
@@ -428,10 +587,34 @@ function collectProjectFromForm() {
   }
   const commands = [];
   const used = new Set();
-  for (const row of state.setupScriptRows) {
-    if (isCustomRow(row) || !row.selected) continue;
-    if (used.has(row.script)) continue;
+  const scriptByIndex = new Map();
+  state.setupScriptRows.forEach((row, index) => {
+    if (!row.selected) return;
+    if (isCustomRow(row)) {
+      const rowState = customRowState(row);
+      if (rowState.empty) return;
+      let script = String(row.script || "").trim();
+      if (!script || used.has(script)) script = uniqueScriptId(rowState.label, used);
+      used.add(script);
+      scriptByIndex.set(index, script);
+      const command = {
+        script,
+        label: lowercaseCommandLabel(rowState.label) || rowState.label,
+        group: normalizeGroup(row.group),
+        argv: rowState.argv,
+      };
+      if (row.hint) command.hint = row.hint;
+      if (row.longRunning) command.longRunning = true;
+      if (row.destructive) command.destructive = true;
+      if (row.confirmTitle) command.confirmTitle = row.confirmTitle;
+      if (row.confirmMessage) command.confirmMessage = row.confirmMessage;
+      if (row.interactions === "expo") command.interactions = "expo";
+      commands.push(command);
+      return;
+    }
+    if (used.has(row.script)) return;
     used.add(row.script);
+    scriptByIndex.set(index, row.script);
     const command = {
       script: row.script,
       group: normalizeGroup(row.group),
@@ -445,28 +628,7 @@ function collectProjectFromForm() {
     if (row.confirmMessage) command.confirmMessage = row.confirmMessage;
     if (row.interactions === "expo") command.interactions = "expo";
     commands.push(command);
-  }
-  for (const row of state.setupScriptRows) {
-    if (!isCustomRow(row) || !row.selected) continue;
-    const rowState = customRowState(row);
-    if (rowState.empty) continue;
-    let script = String(row.script || "").trim();
-    if (!script || used.has(script)) script = uniqueScriptId(rowState.label, used);
-    used.add(script);
-    const command = {
-      script,
-      label: lowercaseCommandLabel(rowState.label) || rowState.label,
-      group: normalizeGroup(row.group),
-      argv: rowState.argv,
-    };
-    if (row.hint) command.hint = row.hint;
-    if (row.longRunning) command.longRunning = true;
-    if (row.destructive) command.destructive = true;
-    if (row.confirmTitle) command.confirmTitle = row.confirmTitle;
-    if (row.confirmMessage) command.confirmMessage = row.confirmMessage;
-    if (row.interactions === "expo") command.interactions = "expo";
-    commands.push(command);
-  }
+  });
   if (!commands.length) throw new Error("Check at least one command to show on the dashboard.");
   const healthPort = Number(els.setupHealthPort.value);
   const existing = state.setupEditingIndex != null ? state.setupDraft.projects[state.setupEditingIndex] : null;
@@ -496,6 +658,14 @@ function collectProjectFromForm() {
   }
   if (Number.isFinite(healthPort) && healthPort > 0) {
     project.health = { stack: existing?.health?.stack || displayName, port: healthPort };
+  }
+  const primaryIndex = state.setupPrimaryIndex;
+  const primaryScript =
+    (primaryIndex != null && scriptByIndex.get(primaryIndex)) ||
+    state.setupPrimaryScript ||
+    "";
+  if (primaryScript && commands.some((command) => command.script === primaryScript && !command.destructive)) {
+    project.primaryScript = primaryScript;
   }
   return project;
 }
@@ -606,7 +776,7 @@ export async function openSetup({ addProject = false } = {}) {
   const result = await requestJson("/api/workspace", { quiet: true });
   if (!result.ok) {
     setSetupError(result.message);
-    els.setupPanel.hidden = false;
+    setSettingsOpen(true);
     return;
   }
   const raw = result.data;
@@ -614,15 +784,35 @@ export async function openSetup({ addProject = false } = {}) {
   const empty = (state.setupDraft.projects || []).length === 0;
   state.setupIsFirstRun = empty;
   state.setupAddMode = Boolean(addProject);
+  state.setupFromDashboard = Boolean(addProject);
   els.setupProjectForm.hidden = true;
   resetProjectForm();
   renderSetupList();
-  els.setupPanel.hidden = false;
+  setSettingsOpen(true);
   if (addProject) {
     openProjectForm();
     return;
   }
   syncSetupAddButton();
+}
+
+function adjustSetupIndex(current, from, to) {
+  if (current == null) return current;
+  if (current === from) return to;
+  if (from < current && to >= current) return current - 1;
+  if (from > current && to <= current) return current + 1;
+  return current;
+}
+
+function moveSetupScriptRow(from, to) {
+  if (from === to || from < 0 || to < 0) return;
+  const fromRow = state.setupScriptRows[from];
+  const toRow = state.setupScriptRows[to];
+  if (!fromRow?.selected || !toRow?.selected) return;
+  applyRowGroup(fromRow, rowGroup(toRow));
+  state.setupScriptRows = moveItem(state.setupScriptRows, from, to);
+  state.setupPrimaryIndex = adjustSetupIndex(state.setupPrimaryIndex, from, to);
+  renderSetupScripts();
 }
 
 export async function persistSetupOrder(from, to) {
@@ -709,16 +899,19 @@ export function bindSetup() {
   els.setupId.addEventListener("input", () => {
     syncCommitButton();
   });
+  els.setupDescription.addEventListener("input", () => {
+    syncDescriptionCount();
+  });
   els.setupAddCustom.addEventListener("click", () => {
     setSetupError("");
     state.setupScriptRows.push(emptyCustomRow());
     renderSetupScripts();
     syncCommitButton();
     const index = state.setupScriptRows.length - 1;
-    els.setupScripts.querySelector(`[data-script-label="${index}"]`)?.focus();
+    els.setupCommandsBlock?.querySelector(`[data-script-label="${index}"]`)?.focus();
   });
   els.setupCancelForm.addEventListener("click", () => {
-    if (state.setupAddMode) {
+    if (state.setupFromDashboard) {
       closeSetup();
       return;
     }
@@ -733,7 +926,8 @@ export function bindSetup() {
     const probeOk = state.setupProbeOk;
     try {
       const { wasAdding } = commitProjectForm();
-      const ok = await persistWorkspace({ close: wasAdding });
+      const fromDashboard = state.setupFromDashboard;
+      const ok = await persistWorkspace({ close: wasAdding || fromDashboard });
       if (!ok) {
         if (previous) state.setupDraft = previous;
         renderSetupList();
@@ -742,7 +936,7 @@ export function bindSetup() {
         syncSetupChrome();
         return;
       }
-      if (!wasAdding) {
+      if (!wasAdding && !fromDashboard) {
         els.setupProjectForm.hidden = true;
         resetProjectForm();
         syncSetupAddButton();
@@ -853,7 +1047,114 @@ export function bindSetup() {
     state.setupDragIndex = null;
     if (!state.persistDrag) state.isDragging = false;
   });
-  els.setupScripts.addEventListener("input", (event) => {
+
+  els.setupExport?.addEventListener("click", async () => {
+    setSetupError("");
+    const result = await requestJson("/api/workspace", { quiet: true });
+    if (!result.ok) {
+      setSetupError(result.message || "Could not export workspace");
+      return;
+    }
+    const payload = { ...result.data };
+    delete payload.needsSetup;
+    const blob = new Blob([`${JSON.stringify(payload, null, 2)}\n`], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "workspace.json";
+    link.click();
+    URL.revokeObjectURL(url);
+  });
+
+  els.setupImport?.addEventListener("click", () => {
+    setSetupError("");
+    els.setupImportFile?.click();
+  });
+
+  els.setupImportFile?.addEventListener("change", () => {
+    const file = els.setupImportFile.files?.[0];
+    els.setupImportFile.value = "";
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      let parsed;
+      try {
+        parsed = JSON.parse(String(reader.result || ""));
+      } catch {
+        setSetupError("Invalid JSON.");
+        return;
+      }
+      if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+        setSetupError("Invalid workspace file.");
+        return;
+      }
+      hooks.openConfirm({
+        title: "Replace workspace?",
+        message: "This replaces every project in this dashboard with the imported file.",
+        okLabel: "Replace",
+        onConfirm: async () => {
+          delete parsed.needsSetup;
+          const result = await requestJson("/api/workspace", {
+            method: "PUT",
+            quiet: true,
+            body: parsed,
+          });
+          if (!result.ok) {
+            setSetupError(result.message || "invalid_workspace");
+            return;
+          }
+          state.setupDraft = cloneWorkspace(result.data);
+          state.setupIsFirstRun = (state.setupDraft.projects || []).length === 0;
+          state.setupAddMode = false;
+          renderSetupList();
+          syncSetupAddButton();
+          await hooks.fetchStatus();
+        },
+      });
+    };
+    reader.readAsText(file);
+  });
+
+  if (els.setupScripts) {
+    els.setupScripts.addEventListener("dragstart", (event) => {
+      const handle = event.target.closest("[data-script-drag]");
+      if (!handle || !els.setupScripts.contains(handle)) return;
+      state.setupScriptDragIndex = Number(handle.dataset.scriptDrag);
+      state.isDragging = true;
+      event.dataTransfer.effectAllowed = "move";
+      event.dataTransfer.setData("text/plain", String(state.setupScriptDragIndex));
+      const row = handle.closest(".setup-script");
+      row?.classList.add("is-dragging");
+      if (row) event.dataTransfer.setDragImage(row, 24, 24);
+    });
+    els.setupScripts.addEventListener("dragover", (event) => {
+      const row = event.target.closest(".setup-script");
+      if (!row || !els.setupScripts.contains(row) || state.setupScriptDragIndex == null) return;
+      event.preventDefault();
+      event.dataTransfer.dropEffect = "move";
+      els.setupScripts.querySelectorAll(".is-drag-over").forEach((el) => el.classList.remove("is-drag-over"));
+      if (Number(row.dataset.scriptIndex) !== state.setupScriptDragIndex) row.classList.add("is-drag-over");
+    });
+    els.setupScripts.addEventListener("drop", (event) => {
+      const row = event.target.closest(".setup-script");
+      if (!row || !els.setupScripts.contains(row) || state.setupScriptDragIndex == null) return;
+      event.preventDefault();
+      const from = state.setupScriptDragIndex;
+      const to = Number(row.dataset.scriptIndex);
+      clearDragStyles(els.setupScripts);
+      state.setupScriptDragIndex = null;
+      state.isDragging = false;
+      moveSetupScriptRow(from, to);
+    });
+    els.setupScripts.addEventListener("dragend", () => {
+      clearDragStyles(els.setupScripts);
+      state.setupScriptDragIndex = null;
+      state.isDragging = false;
+    });
+  }
+
+  const scriptRoot = els.setupCommandsBlock || els.setupScripts;
+  scriptRoot.addEventListener("input", (event) => {
     const label = event.target.closest("[data-script-label]");
     if (label) {
       const row = state.setupScriptRows[Number(label.dataset.scriptLabel)];
@@ -876,19 +1177,34 @@ export function bindSetup() {
     if (row) row.argvLine = argv.value;
     syncCommitButton();
   });
-  els.setupScripts.addEventListener("click", (event) => {
+  scriptRoot.addEventListener("click", (event) => {
     const remove = event.target.closest("[data-script-remove]");
     if (!remove) return;
     const index = Number(remove.dataset.scriptRemove);
     if (!Number.isInteger(index) || index < 0) return;
     state.setupScriptRows.splice(index, 1);
+    if (state.setupPrimaryIndex === index) {
+      state.setupPrimaryIndex = null;
+      state.setupPrimaryScript = "";
+    } else if (state.setupPrimaryIndex > index) {
+      state.setupPrimaryIndex -= 1;
+    }
     renderSetupScripts();
     syncCommitButton();
   });
-  els.setupScripts.addEventListener("change", (event) => {
+  scriptRoot.addEventListener("change", (event) => {
+    const primary = event.target.closest("[data-script-primary]");
+    if (primary) {
+      const index = Number(primary.dataset.scriptPrimary);
+      const row = state.setupScriptRows[index];
+      state.setupPrimaryIndex = index;
+      state.setupPrimaryScript = row?.script || "";
+      return;
+    }
     const check = event.target.closest("[data-script-check]");
     if (check) {
       state.setupScriptRows[Number(check.dataset.scriptCheck)].selected = check.checked;
+      renderSetupScripts();
       syncCommitButton();
       return;
     }
@@ -899,14 +1215,18 @@ export function bindSetup() {
       renderSetupScripts();
       return;
     }
-    const longRunning = event.target.closest("[data-script-long]");
-    if (longRunning) {
-      state.setupScriptRows[Number(longRunning.dataset.scriptLong)].longRunning = longRunning.checked;
+    const runtime = event.target.closest("[data-script-runtime]");
+    if (runtime) {
+      const row = state.setupScriptRows[Number(runtime.dataset.scriptRuntime)];
+      if (row) row.longRunning = runtime.value === "long";
+      renderSetupScripts();
       return;
     }
-    const destructive = event.target.closest("[data-script-destructive]");
-    if (destructive) {
-      state.setupScriptRows[Number(destructive.dataset.scriptDestructive)].destructive = destructive.checked;
+    const safety = event.target.closest("[data-script-safety]");
+    if (safety) {
+      const row = state.setupScriptRows[Number(safety.dataset.scriptSafety)];
+      if (row) row.destructive = safety.value === "destructive";
+      renderSetupScripts();
     }
   });
 }

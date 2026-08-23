@@ -22,10 +22,10 @@ DOM regions map 1:1 to `els` in [dom.js](js/dom.md):
 |--------|-----|
 | Top bar | `#health-strip`, `#health-checked`, `#edit-setup`, `#health-refresh` |
 | Last tests | `#test-overview`, `#test-grid` (hidden unless `showTestOverview`) |
-| Projects | `#project-grid`, `#projects-empty`, `#add-project`, `#add-project-empty` |
-| Console | `#log-resize`, `#log-filter`, `#job-tabs`, `#log-panel`, `#log-prompt-overlay`, `#log-toolbar` |
+| Projects | `#project-grid`, `#projects-empty`, `#project-filter`, `#start-primaries`, `#add-project`, `#add-project-empty` |
+| Console | `#log-resize`, `#log-filter`, `#log-summary`, `#job-tabs`, `#log-panel`, `#log-prompt-overlay`, `#log-toolbar` |
 | Confirm | `#confirm-modal` — destructive commands (`window.confirm` is not used) |
-| Settings sheet | `#setup-panel` — list + add/edit form |
+| Settings page | `#setup-panel` in `.workspace-main` — list + add/edit form. `#setup-add-project` next to **Projects**. `#setup-advanced` (Id), `#setup-description-count`, `#setup-workspace-io`, `#setup-scripts-available` |
 
 The console section starts with `is-collapsed` in markup; [console.js](js/console.md) applies the stored preference after status loads.
 

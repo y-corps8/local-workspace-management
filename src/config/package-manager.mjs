@@ -36,11 +36,12 @@ export function packageManagerArgv(pm, script) {
   return ["npm", "run", name];
 }
 
-/** Windows spawn without shell: npm/pnpm/yarn are .cmd; bun is bun.exe; Maven wrapper is mvnw.cmd. */
+/** Windows spawn without shell: npm/npx/pnpm/yarn are .cmd; bun is bun.exe; Maven wrapper is mvnw.cmd. */
 export function spawnFileForBin(bin, platform = process.platform) {
   const name = String(bin || "");
   if (platform !== "win32") return name;
   if (name === "npm") return "npm.cmd";
+  if (name === "npx") return "npx.cmd";
   if (name === "pnpm") return "pnpm.cmd";
   if (name === "yarn") return "yarn.cmd";
   if (name === "bun") return "bun.exe";

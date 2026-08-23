@@ -20,7 +20,7 @@ Port parsing lives in [metro.md](metro.md). This module talks to Metro / simctl 
 
 ## How it works
 
-Live actions prefer the port parsed from that job’s logs; leftover `metroPort` on the project is a fallback until logs print a URL. Scheme comes from `expoDevClientScheme` (default `app`). Metro WebSocket and inspector calls go to `127.0.0.1` only. Metro message socket requires `version: 2`.
+Live actions prefer the port parsed from that job’s logs; in-memory default is `8081` (an old file’s `metroPort` is used for that process only, then dropped on save). Scheme comes from `expoDevClientScheme` (default `app`). Metro WebSocket and inspector calls go to `127.0.0.1` only. Metro message socket requires `version: 2`.
 
 ## Tests
 

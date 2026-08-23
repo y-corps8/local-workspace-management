@@ -22,7 +22,7 @@ Matches, in order:
 2. `metro waiting on` / `web is waiting on` / `waiting on` plus an `http(s)` or `exp(s)://` URL
 3. `exp://` / `exps://` links (last match with a valid port wins)
 
-Ignores arbitrary `http://` in stack traces. Legacy `metroPort` on the project is only a fallback until logs print a URL — see [metro-actions.md](metro-actions.md) `metroSettings`.
+Ignores arbitrary `http://` in stack traces. The file does not store `metroPort`; [metro-actions.md](metro-actions.md) `metroSettings` uses the job’s parsed port, then in-memory `8081`.
 
 ## Tests
 

@@ -2,7 +2,7 @@
 
 Runtime config for projects and command buttons. **Either** setup path is valid; both only write this one file:
 
-1. **Portal** — first-run / **Settings** in the dashboard. Add, Update, confirmed Remove, **Show on dashboard**, drag-to-reorder, and the Settings **Show last test runs** checkbox write `workspace.json` and reload in memory (no process restart). Light / Dark is a browser preference (`localStorage`), not this file. There is no **Save setup**.
+1. **Portal** — first-run / **Settings** in the dashboard. Add, Update, confirmed Remove, **Show on dashboard**, drag-to-reorder, and the Settings **Show last test runs** checkbox write `workspace.json` and reload in memory (no process restart). **Export workspace** / **Import workspace** on the Settings list download or replace this file (`PUT /api/workspace` after **Replace workspace?**). Light / Dark is a browser preference (`localStorage`), not this file. There is no **Save setup**.
 2. **JSON** — copy [`workspace.example.json`](../workspace.example.json) (filled sample for checking the UI) to the live path below, or hand-edit. Restart after a manual edit.
 
 There is no second config format. Portal setup does not store anything else.
@@ -43,7 +43,7 @@ Empty shape (the example file also has dummy projects you can copy to preview th
 }
 ```
 
-Older files may still have `workspaceRoot`, top-level `metroPort` / `expoDevClientScheme`, or per-project `role`. `workspaceRoot` is dropped on load/save; relative project paths are rewritten to absolute against that root. Top-level Metro fields are ignored on new writes. A leftover per-project `metroPort` is kept as a fallback until live logs print the real port; `expoDevClientScheme` is copied onto Expo projects that omit it. `role` is copied into `description` (max 50 characters) when `description` is missing, then dropped.
+Older files may still have `workspaceRoot`, top-level `metroPort` / `expoDevClientScheme`, per-project `metroPort`, or per-project `role`. Those keys are read once and stripped on save. Relative paths are rewritten to absolute against `workspaceRoot`. `role` is copied into `description` (max 50 characters) when `description` is missing. Top-level `expoDevClientScheme` is copied onto Expo projects that omit it. A leftover `metroPort` is used in memory for that process (then `8081`) until Metro logs print a URL; it is not written back.
 
 ## Each project
 
@@ -56,9 +56,9 @@ Older files may still have `workspaceRoot`, top-level `metroPort` / `expoDevClie
 | `path` | Absolute or `~/...`. Leftover relative paths: clone resolves against the repo root; packaged installs resolve against the home directory. Editable in Settings |
 | `ports` | Optional number list (stored with the project; not shown on the card) |
 | `testKind` | `jest` (default) or `maven` — which artifacts [test-results.md](test-results.md) reads. Probe may set this; the project form does not show a Tests select |
-| `metroPort` | Optional legacy fallback for Expo live actions if logs have not printed a URL yet. Live actions prefer the port parsed from that job’s Metro/Expo output. Setup no longer writes this |
 | `expoDevClientScheme` | Native URL scheme for iOS/Android open. Probe reads `expo.scheme` from `app.json` / `app.config.json` (default `app`) |
-| `health` | Optional `{ "stack": "…", "port": 3000 }` for the health strip. Green while a long-running command from the dashboard is running for that project, or if the port is open on refresh / status rebuild. Not polled. |
+| `health` | Optional `{ "stack": "…", "port": 3000 }` for the health strip. Gold **Running** while a long-running command from the dashboard is running for that project, green **Port open** if the port is open on refresh / status rebuild with no such job, muted **Idle** otherwise. Not polled. |
+| `primaryScript` | Optional. Must match a **non-destructive** command `script` on this project; otherwise dropped. That button is gold on the card. **Start primaries** runs idle visible primaries. |
 | `commands` | Buttons on that card |
 
 Duplicate `id`s are rejected.
@@ -74,8 +74,8 @@ Default argv is `npm run <script>`, except lifecycle scripts `npm start` / `npm 
 | `script` | Id suffix and default npm script name. Required unless `argv` is set |
 | `group` | Section on the card. Any slug (`^[a-zA-Z0-9][a-zA-Z0-9_-]*$`). Empty or legacy `tooling` → `tools`. Examples below; type your own (`lint`, `deploy`) |
 | `label` | Lowercase button text. Omit to use `script` |
-| `hint` | Optional; stored but not shown on the card |
-| `longRunning` | Treat as a server (Stop instead of waiting for exit) |
+| `hint` | Optional; muted line on the Settings command row. Not shown on the card (no hover tip on card buttons). Do not put argv here. |
+| `longRunning` | Setup **Once | Long-running**. Once (omit / false) waits for exit. Long-running (`true`) treats it as a server: Stop, gold Running pill |
 | `destructive` + `confirmTitle` / `confirmMessage` | In-page confirm before run |
 | `jestJson` | Append Jest `--json --outputFile=coverage/jest-results.json` |
 | `interactions` | `"expo"` for live Reload / Menu / iOS / …; omit otherwise |
@@ -89,7 +89,7 @@ Not a closed list. Setup shows only groups that have scripts; each row has a Gro
 
 | Example `group` | Section label |
 |-----------------|---------------|
-| `run` | Run (primary button style) |
+| `run` | Run (gold when no `primaryScript` is set) |
 | `database` | Database |
 | `seed` | Seed |
 | `test` | Tests (`kind` becomes `test` so last-run snapshots persist) |
