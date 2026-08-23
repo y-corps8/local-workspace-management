@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { commandAvailability, parseOverviewPort, sanitizeRawWorkspace, shouldReloadWorkspaceWatch } from "../../src/config/commands.mjs";
+import { commandAvailability, parseOverviewPort, publicCommand, sanitizeRawWorkspace, shouldReloadWorkspaceWatch } from "../../src/config/commands.mjs";
 
 test("sanitize rejects duplicate project ids", () => {
   assert.throws(
@@ -85,6 +85,73 @@ test("directory watch ignores null filename and tmp files", () => {
   assert.equal(shouldReloadWorkspaceWatch("workspace.json", { fromDirectory: true }), true);
   assert.equal(shouldReloadWorkspaceWatch("README.md", { fromDirectory: true }), false);
   assert.equal(shouldReloadWorkspaceWatch("workspace.json", { fromDirectory: false }), true);
+});
+
+test("sanitize keeps a non-destructive primaryScript and drops the rest", () => {
+  const keep = sanitizeRawWorkspace({
+    projects: [
+      {
+        id: "app",
+        path: "/tmp/a",
+        primaryScript: "start",
+        commands: [
+          { script: "start", group: "run", argv: ["echo", "start"] },
+          { script: "reset", group: "tools", destructive: true, argv: ["echo", "reset"] },
+        ],
+      },
+    ],
+  });
+  assert.equal(keep.projects[0].primaryScript, "start");
+  const unknown = sanitizeRawWorkspace({
+    projects: [
+      {
+        id: "app",
+        path: "/tmp/a",
+        primaryScript: "missing",
+        commands: [{ script: "start", argv: ["echo", "start"] }],
+      },
+    ],
+  });
+  assert.equal(unknown.projects[0].primaryScript, undefined);
+  const destructive = sanitizeRawWorkspace({
+    projects: [
+      {
+        id: "app",
+        path: "/tmp/a",
+        primaryScript: "reset",
+        commands: [{ script: "reset", destructive: true, argv: ["echo", "reset"] }],
+      },
+    ],
+  });
+  assert.equal(destructive.projects[0].primaryScript, undefined);
+});
+
+test("sanitize drops leftover accent fields", () => {
+  const leftover = sanitizeRawWorkspace({
+    projects: [{ id: "app", path: "/tmp/a", accent: "blue", commands: [] }],
+  });
+  assert.equal(leftover.projects[0].accent, undefined);
+  const hex = sanitizeRawWorkspace({
+    projects: [{ id: "app", path: "/tmp/a", accent: "#fff", commands: [] }],
+  });
+  assert.equal(hex.projects[0].accent, undefined);
+});
+
+test("publicCommand exposes primary and omits argv", () => {
+  const pub = publicCommand({
+    id: "app:start",
+    repo: "app",
+    script: "start",
+    label: "start",
+    group: "run",
+    longRunning: true,
+    destructive: false,
+    argv: ["npm", "start"],
+    primary: true,
+    interactions: [],
+  });
+  assert.equal(pub.primary, true);
+  assert.equal(pub.argv, undefined);
 });
 
 test("parseOverviewPort defaults and validates", () => {

@@ -21,7 +21,7 @@ locws start
 - Same server, open a tab: `locws start --browser`. Dedicated window: `locws start --window`. Details: [npm scripts](docs/npm-scripts.md).
 - If a newer npm version exists, the terminal prints it. Upgrade with `locws upgrade` (runs `npm install -g @y-corps/locws@latest`). Git clones do not nag; use `git pull` there. Testers: `npx @y-corps/locws@beta start`.
 
-Then **Add project** → Browse or paste a path (absolute or `~/...`) → **Probe** → pick commands → **Add Project**. **Cancel** dismisses without saving. Step by step: [User guide](docs/user-guide.md).
+Then **Add project** → Browse or paste a path (absolute or `~/...`) → **Probe** → pick commands → **Add project**. **Cancel** dismisses without saving. Step by step: [User guide](docs/user-guide.md).
 
 To work on this repo instead of installing the CLI:
 

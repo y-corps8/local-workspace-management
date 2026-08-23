@@ -99,6 +99,13 @@ function probePort(port) {
   });
 }
 
+/** job running wins over a TCP probe; down is muted idle, not a failure. */
+export function healthReason({ jobRunning, portOpen }) {
+  if (jobRunning) return "job";
+  if (portOpen) return "port";
+  return "down";
+}
+
 export function safeStaticPath(urlPath, staticRoot = STATIC_ROOT) {
   let decoded;
   try {
@@ -172,10 +179,16 @@ export function createOverviewApp({ host = HOST, port = PORT } = {}) {
 
   async function collectHealth() {
     return Promise.all(
-      HEALTH_CHECKS.filter((check) => !REPOS[check.repo]?.hidden).map(async (check) => ({
-        ...check,
-        up: runtime.repoHasRunningLongJob(check.repo) || (await probePort(check.port)),
-      }))
+      HEALTH_CHECKS.filter((check) => !REPOS[check.repo]?.hidden).map(async (check) => {
+        const jobRunning = runtime.repoHasRunningLongJob(check.repo);
+        const portOpen = await probePort(check.port);
+        const reason = healthReason({ jobRunning, portOpen });
+        return {
+          ...check,
+          up: reason !== "down",
+          reason,
+        };
+      })
     );
   }
 
@@ -230,6 +243,7 @@ export function createOverviewApp({ host = HOST, port = PORT } = {}) {
         root: repo.root,
         ports: repo.ports,
         hidden: Boolean(repo.hidden),
+        primaryScript: repo.primaryScript,
         git: gitByRepo[repoId],
         running: [...jobs.values()]
           .filter((job) => job.repo === repoId && job.status === "running")

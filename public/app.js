@@ -16,6 +16,7 @@ import {
   logItemsFromPayload,
   selectJob,
   syncConsoleCollapsedDefault,
+  toggleOutputCollapsed,
   updateLogChrome,
 } from "./js/console.js";
 import { els } from "./js/dom.js";
@@ -42,6 +43,7 @@ import { applyTheme } from "./js/theme.js";
 import {
   clearDragStyles,
   dashboardRepos,
+  isTypingTarget,
   moveItem,
   readStoredTheme,
   weaveVisibleIds,
@@ -152,7 +154,10 @@ async function editProjectFromCard(repoId) {
   closeCardMenu();
   await openSetup();
   const index = (state.setupDraft?.projects ?? []).findIndex((project) => project.id === repoId);
-  if (index >= 0) openProjectForm(index);
+  if (index >= 0) {
+    state.setupFromDashboard = true;
+    openProjectForm(index);
+  }
 }
 
 async function deleteProjectFromCard(repoId) {
@@ -266,6 +271,85 @@ els.healthRefresh?.addEventListener("click", async () => {
     state.healthRefreshBusy = false;
     els.healthRefresh.classList.remove("is-busy");
   }
+});
+
+let healthFlashTimer = 0;
+
+function flashProjectCard(repoId) {
+  state.healthFlashRepoId = repoId;
+  if (healthFlashTimer) window.clearTimeout(healthFlashTimer);
+  healthFlashTimer = window.setTimeout(() => {
+    if (state.healthFlashRepoId === repoId) state.healthFlashRepoId = null;
+    healthFlashTimer = 0;
+    renderProjects();
+  }, 1200);
+  renderProjects();
+  const card = els.projectEl.querySelector(`.project-card[data-repo="${CSS.escape(repoId)}"]`);
+  card?.scrollIntoView({ block: "nearest" });
+}
+
+els.healthEl?.addEventListener("click", (event) => {
+  const pill = event.target.closest("[data-health-repo]");
+  if (!pill || !els.healthEl.contains(pill)) return;
+  const repoId = pill.dataset.healthRepo;
+  if (!repoId) return;
+  if (!els.setupPanel.hidden) closeSetup();
+  flashProjectCard(repoId);
+});
+
+els.startPrimaries?.addEventListener("click", async () => {
+  const commands = state.statusData?.commands ?? [];
+  const visible = new Set(dashboardRepos(state.statusData?.repos).map((repo) => repo.id));
+  const running = new Set(
+    (state.statusData?.jobs ?? []).filter((job) => job.status === "running").map((job) => job.id)
+  );
+  const idle = commands.filter(
+    (command) => command.primary && visible.has(command.repo) && !running.has(command.id) && command.available !== false
+  );
+  await Promise.all(idle.map((command) => runCommand(command.id)));
+});
+
+els.projectFilter?.addEventListener("input", () => {
+  state.projectFilter = els.projectFilter.value;
+  render();
+});
+
+els.projectFilter?.addEventListener("keydown", (event) => {
+  if (event.key !== "Escape") return;
+  if (!String(state.projectFilter || "").trim() && !els.projectFilter.value) return;
+  event.preventDefault();
+  event.stopPropagation();
+  els.projectFilter.value = "";
+  state.projectFilter = "";
+  render();
+});
+
+els.testEl?.addEventListener("click", (event) => {
+  const card = event.target.closest("[data-test-repo]");
+  if (!card || !els.testEl.contains(card)) return;
+  if (event.target.closest("details, a, button")) return;
+  const repoId = card.dataset.testRepo;
+  if (!repoId) return;
+  const jobs = state.statusData?.jobs ?? [];
+  const live = jobs.find((job) => job.repo === repoId && commandById(job.id)?.group === "test");
+  if (live) {
+    selectJob(live.id);
+    return;
+  }
+  const command = (state.statusData?.commands ?? []).find(
+    (item) => item.repo === repoId && item.group === "test" && item.available !== false
+  );
+  if (!command) return;
+  if (command.destructive) {
+    openConfirm({
+      title: command.confirmTitle || "Run this command?",
+      message: command.confirmMessage || `Run ${command.label}?`,
+      okLabel: "Run",
+      onConfirm: () => runCommand(command.id),
+    });
+    return;
+  }
+  runCommand(command.id);
 });
 
 els.projectEl.addEventListener("click", (event) => {
@@ -393,6 +477,30 @@ document.addEventListener("keydown", (event) => {
       persistSetupOrder(from, to);
       return;
     }
+  }
+  const typing = isTypingTarget(event.target);
+  const mod = event.metaKey || event.ctrlKey;
+  if (mod && event.key.toLowerCase() === "j") {
+    if (!els.setupPanel.hidden) return;
+    event.preventDefault();
+    toggleOutputCollapsed();
+    return;
+  }
+  if (mod && event.key === ",") {
+    if (els.setupProjectForm && !els.setupProjectForm.hidden) return;
+    event.preventDefault();
+    if (els.setupPanel.hidden) openSetup();
+    else closeSetup();
+    return;
+  }
+  if (!typing && event.key === "/" && !mod && !event.altKey) {
+    if (!els.setupPanel.hidden) return;
+    if (els.projectFilter && !els.projectFilter.hidden) {
+      event.preventDefault();
+      els.projectFilter.focus();
+      els.projectFilter.select();
+    }
+    return;
   }
   if (event.key !== "Escape") return;
   if (!els.confirmModal.hidden) {

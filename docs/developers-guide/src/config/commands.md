@@ -26,7 +26,7 @@ Field meanings for operators: [workspace-config.md](../../../workspace-config.md
 | `REPOS`, `REPO_ORDER`, `HEALTH_CHECKS`, `COMMANDS`, `COMMAND_BY_ID` | Mutable in-memory allowlist |
 | `SHOW_TEST_OVERVIEW` | From `workspace.json` |
 | `COMMAND_GROUPS` | Suggested group ids — not a closed allowlist |
-| `sanitizeRawWorkspace` | Validate + drop legacy fields (`role` → `description`, `tooling` → `tools`) |
+| `sanitizeRawWorkspace` | Validate + drop legacy fields (`role` → `description`, `tooling` → `tools`, leftover `accent`). Keep `primaryScript` only if it matches a non-destructive command |
 | `readRawWorkspace` / `readCleanWorkspace` | File vs last-good in memory |
 | `reloadWorkspace` / `writeRawWorkspace` | Load / atomic save |
 | `shouldReloadWorkspaceWatch` | Ignore null filenames and `.workspace.*.tmp` |
@@ -46,10 +46,10 @@ On import, unless `OVERVIEW_SKIP_WORKSPACE_LOAD=1`, `reloadWorkspace()` fills th
 
 Command id is `projectId:script`. `resolveArgv` uses the project’s detected package manager unless `argv` is set; `jestJson` appends `-- --json --outputFile=coverage/jest-results.json`. Windows bins are rewritten in [package-manager.mjs](package-manager.md).
 
-`publicCommand` is the only command shape the UI should see. Workspace JSON may set `"interactions": "expo"` — raw Metro config is rejected.
+`publicCommand` is the only command shape the UI should see (`primary` is included; argv and Metro internals are not). Workspace JSON may set `"interactions": "expo"` — raw Metro config is rejected. `primaryScript` on a project must match a non-destructive command `script` or it is dropped.
 
 `probeProject({ path, platform })` guesses groups (`run`, `database`, `seed`, `test`, `tools`) but the UI accepts any slug. Expo scheme comes from `app.json` / `app.config.*` (`expo.scheme`, default `app`). Maven wrapper suggestion is `mvnw.cmd` on win32, `./mvnw` otherwise.
 
 ## Tests
 
-[`test/commands.test.mjs`](../../../../test/config/commands.test.mjs) — sanitize, availability, watch filter, `parseOverviewPort`.
+[`test/commands.test.mjs`](../../../../test/config/commands.test.mjs) — sanitize, availability, watch filter, `parseOverviewPort`, `primaryScript`, `publicCommand.primary`.

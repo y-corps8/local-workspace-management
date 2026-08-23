@@ -15,6 +15,7 @@ How to use the dashboard: [User guide](../../../user-guide.md).
 | Name | Role |
 |------|------|
 | `safeStaticPath` | Resolve a URL under `public/`; reject traversal, dotfiles, `public/.cache` |
+| `healthReason` | `{ jobRunning, portOpen }` → `"job"` \| `"port"` \| `"down"` (job wins) |
 | `createOverviewApp({ host, port })` | `{ server, runtime, broadcastStatus, buildStatus, getPort }` — no listen |
 
 ## How it works
@@ -34,9 +35,9 @@ Every response (JSON, static, SSE, 405) includes [securityHeaders](origin.md).
 
 ### Status
 
-`buildStatus()` is the snapshot for `GET /api/status` and the SSE `status` event. Health is not polled. A pill is up if that project has a running long-running job, otherwise a one-shot TCP probe.
+`buildStatus()` is the snapshot for `GET /api/status` and the SSE `status` event. Health is not polled. Each pill has `reason`: `job` (long-running dashboard job), `port` (TCP open, no such job), or `down` (idle). `up` is true unless `down`.
 
-- **Full:** git (8s cache via [git-info.md](../jobs/git-info.md)), `package.json` state, health, jobs, public commands, optional last-test rows.
+- **Full:** git (8s cache via [git-info.md](../jobs/git-info.md)), `package.json` state, health, jobs, public commands, optional last-test rows. Cards show `repos[].git` (branch · dirty); `unknown` / `missing` omit the line.
 - **Light** (`{ light: true }`): reuses `lastFullStatus` git / pkg / commands; refreshes health, jobs, and last tests. Job start/stop uses light so restart finalize does not double-rebuild.
 
 `readAllLastTestRuns` runs only when `showTestOverview` is on. Test-job finalize still writes a snapshot.
@@ -72,4 +73,4 @@ Clients live in `sseClients`. Events: `status`, `job`, `log` (`{ id, lines }` wh
 
 ## Tests
 
-[`test/http.test.mjs`](../../../../test/http/http.test.mjs) — ephemeral `listen(0, 127.0.0.1)`: foreign Origin/Host 403, loopback status empty, static `../` 404, security headers, HEAD `/` empty body, unknown run id 400.
+[`test/http.test.mjs`](../../../../test/http/http.test.mjs) — ephemeral `listen(0, 127.0.0.1)`: foreign Origin/Host 403, loopback status empty, static `../` 404, security headers, HEAD `/` empty body, unknown run id 400, `healthReason` job > port > down.

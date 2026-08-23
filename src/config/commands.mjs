@@ -108,6 +108,7 @@ function cmd(repo, script, options = {}) {
     confirmMessage,
     hint,
     interactions,
+    primary,
   } = options;
   const customArgv = Array.isArray(argv);
   return {
@@ -127,6 +128,7 @@ function cmd(repo, script, options = {}) {
     confirmMessage: confirmMessage ?? null,
     hint: hint ?? null,
     interactions: interactions ?? [],
+    primary: Boolean(primary),
   };
 }
 
@@ -285,6 +287,10 @@ export function sanitizeRawWorkspace(raw) {
       };
     }
     if (project.hidden) next.hidden = true;
+    const primaryScript = String(project.primaryScript || "").trim();
+    if (primaryScript && commands.some((entry) => entry.script === primaryScript && !entry.destructive)) {
+      next.primaryScript = primaryScript;
+    }
     return next;
   });
 
@@ -314,6 +320,7 @@ function parseWorkspace(raw) {
       metroPort: Number(project.metroPort) || 8081,
       expoDevClientScheme: String(project.expoDevClientScheme || "app").trim() || "app",
       hidden: Boolean(project.hidden),
+      primaryScript: project.primaryScript,
     };
     repoOrder.push(project.id);
     if (project.health) {
@@ -337,6 +344,7 @@ function parseWorkspace(raw) {
           confirmTitle: entry.confirmTitle,
           confirmMessage: entry.confirmMessage,
           hint: entry.hint,
+          primary: Boolean(project.primaryScript) && project.primaryScript === entry.script,
           interactions: resolveInteractions(entry.interactions),
         })
       );
@@ -697,6 +705,7 @@ export function publicCommand(command, availability = null) {
     confirmTitle: command.confirmTitle,
     confirmMessage: command.confirmMessage,
     hint: command.hint,
+    primary: Boolean(command.primary),
     available: availability ? Boolean(availability.available) : true,
     unavailableReason: availability?.unavailableReason ?? null,
     interactions: (command.interactions ?? []).map((item) => ({

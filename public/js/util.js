@@ -10,6 +10,7 @@ export const GROUP_LABELS = {
 
 export const CONSOLE_HEIGHT_KEY = "overview.consoleHeight";
 export const CONSOLE_COLLAPSED_KEY = "overview.consoleCollapsed";
+export const LOG_FILTER_KEY = "overview.logFilter";
 export const THEME_KEY = "overview.theme";
 export const THEME_COLORS = { dark: "#0c0c0a", light: "#f6f3eb" };
 export const CONSOLE_MIN_PX = 160;
@@ -173,6 +174,48 @@ export function persistTheme(theme) {
   } catch {
     // private mode / blocked storage
   }
+}
+
+export function readStoredLogFilter() {
+  try {
+    return String(localStorage.getItem(LOG_FILTER_KEY) || "");
+  } catch {
+    return "";
+  }
+}
+
+export function persistLogFilter(query) {
+  try {
+    const text = String(query ?? "").trim();
+    if (!text) localStorage.removeItem(LOG_FILTER_KEY);
+    else localStorage.setItem(LOG_FILTER_KEY, text);
+  } catch {
+    // private mode / blocked storage
+  }
+}
+
+export function isTypingTarget(el) {
+  if (!el || el.nodeType !== 1) {
+    el = el?.parentElement;
+  }
+  if (!el) return false;
+  if (el.closest?.("input, textarea, select, [contenteditable='true']")) return true;
+  const tag = el.tagName;
+  return tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || el.isContentEditable;
+}
+
+export function projectFilterHit(repo, commands, query) {
+  const q = String(query || "").trim().toLowerCase();
+  if (!q) return { card: true, groups: new Set() };
+  const fields = [repo.name, repo.id, repo.description, repo.git?.branch];
+  const cardHit = fields.some((value) => String(value || "").toLowerCase().includes(q));
+  const groups = new Set();
+  for (const command of commands ?? []) {
+    const label = String(command.label || "").toLowerCase();
+    const script = String(command.script || "").toLowerCase();
+    if (label.includes(q) || script.includes(q)) groups.add(command.group);
+  }
+  return { card: cardHit || groups.size > 0, groups };
 }
 
 export function currentTheme() {

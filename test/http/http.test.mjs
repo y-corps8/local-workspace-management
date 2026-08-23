@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import http from "node:http";
 import { test } from "node:test";
-import { createOverviewApp } from "../../src/http/overview-http.mjs";
+import { createOverviewApp, healthReason } from "../../src/http/overview-http.mjs";
 
 function request(port, { method = "GET", urlPath = "/", headers = {}, body } = {}) {
   return new Promise((resolve, reject) => {
@@ -113,4 +113,10 @@ test("POST /api/run unknown id is 400", async () => {
     assert.equal(res.status, 400);
     assert.match(res.body, /unknown_command/);
   });
+});
+
+test("healthReason prefers a running job over a TCP probe", () => {
+  assert.equal(healthReason({ jobRunning: true, portOpen: true }), "job");
+  assert.equal(healthReason({ jobRunning: false, portOpen: true }), "port");
+  assert.equal(healthReason({ jobRunning: false, portOpen: false }), "down");
 });
