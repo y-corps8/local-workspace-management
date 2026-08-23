@@ -273,13 +273,6 @@ export function sanitizeRawWorkspace(raw) {
     if (hasExpo || project.expoDevClientScheme) {
       next.expoDevClientScheme = String(project.expoDevClientScheme || legacyScheme).trim() || "app";
     }
-    const explicitPort = Number(project.metroPort);
-    if (Number.isFinite(explicitPort) && explicitPort > 0) {
-      next.metroPort = explicitPort;
-    } else if ((hasExpo || project.expoDevClientScheme) && raw.metroPort != null) {
-      const fromLegacy = Number(raw.metroPort);
-      if (Number.isFinite(fromLegacy) && fromLegacy > 0) next.metroPort = fromLegacy;
-    }
     if (project.health && Number.isFinite(Number(project.health.port))) {
       next.health = {
         stack: String(project.health.stack || next.name),
@@ -308,6 +301,7 @@ function parseWorkspace(raw) {
   const commands = [];
 
   for (const project of clean.projects) {
+    const incoming = (raw.projects || []).find((item) => item?.id === project.id);
     const root = resolveUserPath(project.path, PATH_BASE);
     repos[project.id] = {
       id: project.id,
@@ -317,7 +311,7 @@ function parseWorkspace(raw) {
       root,
       ports: project.ports,
       testKind: project.testKind,
-      metroPort: Number(project.metroPort) || 8081,
+      metroPort: Number(incoming?.metroPort) || Number(raw.metroPort) || 8081,
       expoDevClientScheme: String(project.expoDevClientScheme || "app").trim() || "app",
       hidden: Boolean(project.hidden),
       primaryScript: project.primaryScript,

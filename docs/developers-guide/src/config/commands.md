@@ -26,7 +26,7 @@ Field meanings for operators: [workspace-config.md](../../../workspace-config.md
 | `REPOS`, `REPO_ORDER`, `HEALTH_CHECKS`, `COMMANDS`, `COMMAND_BY_ID` | Mutable in-memory allowlist |
 | `SHOW_TEST_OVERVIEW` | From `workspace.json` |
 | `COMMAND_GROUPS` | Suggested group ids — not a closed allowlist |
-| `sanitizeRawWorkspace` | Validate + drop legacy fields (`role` → `description`, `tooling` → `tools`, leftover `accent`). Keep `primaryScript` only if it matches a non-destructive command |
+| `sanitizeRawWorkspace` | Validate + drop leftover fields (`role` → `description`, `tooling` → `tools`, `workspaceRoot`, `metroPort`, leftover `accent`). Keep `primaryScript` only if it matches a non-destructive command |
 | `readRawWorkspace` / `readCleanWorkspace` | File vs last-good in memory |
 | `reloadWorkspace` / `writeRawWorkspace` | Load / atomic save |
 | `shouldReloadWorkspaceWatch` | Ignore null filenames and `.workspace.*.tmp` |
@@ -52,4 +52,4 @@ Command id is `projectId:script`. `resolveArgv` uses the project’s detected pa
 
 ## Tests
 
-[`test/commands.test.mjs`](../../../../test/config/commands.test.mjs) — sanitize, availability, watch filter, `parseOverviewPort`, `primaryScript`, `publicCommand.primary`.
+[`test/commands.test.mjs`](../../../../test/config/commands.test.mjs) — sanitize, leftover field migrate/drop, availability, watch filter, `parseOverviewPort`, `primaryScript`, `publicCommand.primary`.

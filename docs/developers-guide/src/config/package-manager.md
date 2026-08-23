@@ -1,6 +1,6 @@
 # `src/config/package-manager.mjs`
 
-Detect npm / pnpm / yarn / bun and build spawn argv. Windows spawn without a shell needs `.cmd` / `bun.exe`. Maven wrapper `./mvnw` / `mvnw` becomes `mvnw.cmd` on win32. Also guesses when Jest `--json` is safe during probe.
+Detect npm / pnpm / yarn / bun and build spawn argv. Windows spawn without a shell needs `.cmd` / `bun.exe`. `npx` becomes `npx.cmd` on win32. Maven wrapper `./mvnw` / `mvnw` becomes `mvnw.cmd` on win32. Also guesses when Jest `--json` is safe during probe.
 
 ## Imports / used by
 
@@ -16,7 +16,7 @@ Detect npm / pnpm / yarn / bun and build spawn argv. Windows spawn without a she
 | `isPackageManagerBin` | First argv token is a known manager |
 | `detectPackageManager` | `packageManager` field, then lockfiles, else npm |
 | `packageManagerArgv` | `yarn run`, `pnpm`/`npm` lifecycle without `run` for `start`/`test`, `bun run` |
-| `spawnFileForBin` | Windows: `npm.cmd`, `pnpm.cmd`, `yarn.cmd`, `bun.exe`, `mvnw.cmd` |
+| `spawnFileForBin` | Windows: `npm.cmd`, `npx.cmd`, `pnpm.cmd`, `yarn.cmd`, `bun.exe`, `mvnw.cmd` |
 | `resolveSpawnArgv` | Rewrite `argv[0]` via `spawnFileForBin` |
 | `guessJestJson` | True only for likely Jest in group `test` — never Maven / Vitest / Playwright / Mocha / Ava / pytest |
 
@@ -30,4 +30,4 @@ Detect npm / pnpm / yarn / bun and build spawn argv. Windows spawn without a she
 
 ## Tests
 
-[`test/package-manager.test.mjs`](../../../../test/config/package-manager.test.mjs) — field vs lockfiles; argv per manager; `guessJestJson`; Windows `.cmd` / `bun.exe` / `mvnw.cmd`.
+[`test/package-manager.test.mjs`](../../../../test/config/package-manager.test.mjs) — field vs lockfiles; argv per manager; `guessJestJson`; Windows `.cmd` / `npx.cmd` / `bun.exe` / `mvnw.cmd`.

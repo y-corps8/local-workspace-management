@@ -43,7 +43,7 @@ Empty shape (the example file also has dummy projects you can copy to preview th
 }
 ```
 
-Older files may still have `workspaceRoot`, top-level `metroPort` / `expoDevClientScheme`, or per-project `role`. `workspaceRoot` is dropped on load/save; relative project paths are rewritten to absolute against that root. Top-level Metro fields are ignored on new writes. A leftover per-project `metroPort` is kept as a fallback until live logs print the real port; `expoDevClientScheme` is copied onto Expo projects that omit it. `role` is copied into `description` (max 50 characters) when `description` is missing, then dropped.
+Older files may still have `workspaceRoot`, top-level `metroPort` / `expoDevClientScheme`, per-project `metroPort`, or per-project `role`. Those keys are read once and stripped on save. Relative paths are rewritten to absolute against `workspaceRoot`. `role` is copied into `description` (max 50 characters) when `description` is missing. Top-level `expoDevClientScheme` is copied onto Expo projects that omit it. A leftover `metroPort` is used in memory for that process (then `8081`) until Metro logs print a URL; it is not written back.
 
 ## Each project
 
@@ -56,7 +56,6 @@ Older files may still have `workspaceRoot`, top-level `metroPort` / `expoDevClie
 | `path` | Absolute or `~/...`. Leftover relative paths: clone resolves against the repo root; packaged installs resolve against the home directory. Editable in Settings |
 | `ports` | Optional number list (stored with the project; not shown on the card) |
 | `testKind` | `jest` (default) or `maven` — which artifacts [test-results.md](test-results.md) reads. Probe may set this; the project form does not show a Tests select |
-| `metroPort` | Optional legacy fallback for Expo live actions if logs have not printed a URL yet. Live actions prefer the port parsed from that job’s Metro/Expo output. Setup no longer writes this |
 | `expoDevClientScheme` | Native URL scheme for iOS/Android open. Probe reads `expo.scheme` from `app.json` / `app.config.json` (default `app`) |
 | `health` | Optional `{ "stack": "…", "port": 3000 }` for the health strip. Gold **Running** while a long-running command from the dashboard is running for that project, green **Port open** if the port is open on refresh / status rebuild with no such job, muted **Idle** otherwise. Not polled. |
 | `primaryScript` | Optional. Must match a **non-destructive** command `script` on this project; otherwise dropped. That button is gold on the card. **Start primaries** runs idle visible primaries. |

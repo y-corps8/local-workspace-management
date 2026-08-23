@@ -46,6 +46,16 @@ npm start
 - **Node.js 20.6+** (`npm test` uses `node --import`)
 - No extra npm packages to install
 
+`locws start` and `npm start` need only Node. A browser tab is enough.
+
+**Dedicated window** (`locws start --window` / `npm run start:window`) is optional. It compiles a native WebView on your machine (not Chrome). Developers often already have these tools:
+
+- **macOS** — Xcode Command Line Tools so `swiftc` is available: `xcode-select --install`
+- **Linux** — WebKitGTK. Debian/Ubuntu: `sudo apt install python3-gi gir1.2-webkit2-4.1` or `sudo apt install build-essential pkg-config libwebkit2gtk-4.1-dev`. Fedora: `sudo dnf install python3-gobject webkit2gtk4.1`. Arch: `sudo pacman -S python-gobject webkit2gtk`. A display is required (WSL needs WSLg or X11).
+- **Windows** — [WebView2](https://developer.microsoft.com/en-us/microsoft-edge/webview2/) and `csc` (.NET Framework 4.x, included on Windows, or Visual Studio Build Tools). Often already present with Edge.
+
+If that toolchain is missing, the server still prints the loopback URL and keeps listening. Use the browser, or `locws start --browser`. Install commands: [npm scripts](docs/npm-scripts.md).
+
 ## Screenshots
 
 <p align="center">

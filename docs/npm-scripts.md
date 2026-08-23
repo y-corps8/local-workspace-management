@@ -72,7 +72,11 @@ node src/server.mjs start --window
 
 Closing the Workspace Overview window (or quitting that app) stops this npm process: `shutdown()` kills running jobs, then the server exits.
 
-Needs the OS WebView toolchain (macOS `swiftc`, Linux WebKitGTK/PyGObject, Windows WebView2 + `csc`). If it is missing, the server logs an install hint and keeps listening (no window, so it does not auto-exit).
+Optional OS WebView toolchain (the server compiles a helper into `.cache/` on first run). If it is missing, stderr prints the same install hint as [`installHint()`](../src/window/app-window-shared.mjs) and the server keeps listening (no window, so it does not auto-exit). `locws start` / `--browser` do not need this.
+
+- **macOS** — `swiftc`. Install Xcode Command Line Tools: `xcode-select --install`
+- **Linux** — WebKitGTK. Debian/Ubuntu: `sudo apt install python3-gi gir1.2-webkit2-4.1` or `sudo apt install build-essential pkg-config libwebkit2gtk-4.1-dev`. Fedora: `sudo dnf install python3-gobject webkit2gtk4.1`. Arch: `sudo pacman -S python-gobject webkit2gtk`. A display is required (WSL needs WSLg or X11).
+- **Windows** — [WebView2](https://developer.microsoft.com/en-us/microsoft-edge/webview2/) and the C# compiler (`csc`). `csc`: .NET Framework 4.x (included on Windows) or Visual Studio Build Tools.
 
 ## What actually starts
 

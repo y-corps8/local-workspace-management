@@ -61,7 +61,7 @@ Managed Node projects need `<path>/package.json` `scripts` for probe and package
 
 ## Expo Metro
 
-Metro port is read from the running job’s logs (not a setup field). Expo dev-client scheme comes from Probe (`app.json` `expo.scheme`, default `app`) and is stored on the project (`expoDevClientScheme`). Live Reload / iOS / Android use that job’s detected port and the project’s scheme. Legacy `metroPort` in `workspace.json` is only a fallback until logs print a URL.
+Metro port is read from the running job’s logs (not a setup field). Expo dev-client scheme comes from Probe (`app.json` `expo.scheme`, default `app`) and is stored on the project (`expoDevClientScheme`). Live Reload / iOS / Android use that job’s detected port and the project’s scheme. Do not write `metroPort` to `workspace.json`. An old file’s leftover is used in memory until logs print a URL (else `8081`), then dropped on save.
 
 ## UI
 
@@ -89,7 +89,7 @@ Gold **Running** if that project has a **long-running** job started from this da
 
 ## Jobs and workspace
 
-Stop/stdin/restart by live job id if the allowlist dropped that command. After each log chunk, detect choice prompts from `job.partials` (see [`src/jobs/prompt.mjs`](src/jobs/prompt.mjs)) and put `prompt` on the public job. Batch log SSE (~80ms) so two running commands do not flood the UI. Clear the SIGKILL timer on finalize. Shutdown SIGTERM then SIGKILL. Atomic `workspace.json` writes (temp next to the config file as `.workspace.<pid>.tmp`, then rename); keep last-good in memory on corrupt JSON; watch the config directory for external edits (ignore directory events with a null filename and `.workspace.*.tmp`). Atomic last-test snapshots (`.last-test-runs.<pid>.tmp` then rename). Yarn/pnpm/bun at `resolveArgv`; on Windows spawn `npm.cmd` / `pnpm.cmd` / `yarn.cmd` / `bun.exe` and rewrite `./mvnw` / `mvnw` → `mvnw.cmd`. `jestJson` only for Jest. Child `.env` must not replace dashboard PATH extras (append project PATH entries) and must skip the denylist. Job start/stop broadcasts light status (skip git); restart finalize must not double-rebuild. Windows `--browser` opens the URL with `explorer` (not `cmd /c start`).
+Stop/stdin/restart by live job id if the allowlist dropped that command. After each log chunk, detect choice prompts from `job.partials` (see [`src/jobs/prompt.mjs`](src/jobs/prompt.mjs)) and put `prompt` on the public job. Batch log SSE (~80ms) so two running commands do not flood the UI. Clear the SIGKILL timer on finalize. Shutdown SIGTERM then SIGKILL. Atomic `workspace.json` writes (temp next to the config file as `.workspace.<pid>.tmp`, then rename); keep last-good in memory on corrupt JSON; watch the config directory for external edits (ignore directory events with a null filename and `.workspace.*.tmp`). Atomic last-test snapshots (`.last-test-runs.<pid>.tmp` then rename). Yarn/pnpm/bun at `resolveArgv`; on Windows spawn `npm.cmd` / `npx.cmd` / `pnpm.cmd` / `yarn.cmd` / `bun.exe` and rewrite `./mvnw` / `mvnw` → `mvnw.cmd`. `jestJson` only for Jest. Child `.env` must not replace dashboard PATH extras (append project PATH entries) and must skip the denylist. Job start/stop broadcasts light status (skip git); restart finalize must not double-rebuild. Windows `--browser` opens the URL with `explorer` (not `cmd /c start`).
 
 ## Git
 

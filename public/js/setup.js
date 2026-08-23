@@ -30,12 +30,10 @@ export function cloneWorkspace(raw) {
         health: project.health ? { ...project.health } : undefined,
       };
       delete next.role;
+      delete next.metroPort;
       const hasExpo = (next.commands || []).some((command) => command.interactions === "expo");
       if (hasExpo || project.expoDevClientScheme) {
         next.expoDevClientScheme = String(project.expoDevClientScheme || legacyScheme).trim() || legacyScheme;
-      }
-      if (project.metroPort != null && Number(project.metroPort) > 0) {
-        next.metroPort = Number(project.metroPort);
       }
       if (project.hidden) next.hidden = true;
       else delete next.hidden;
@@ -97,6 +95,16 @@ function applyRowGroup(row, group) {
 
 function isCustomRow(row) {
   return Boolean(row?.custom) || Array.isArray(row?.argv);
+}
+
+/** Probe succeeded, or Edit with the saved path still in the field. */
+function formPathReady() {
+  if (state.setupProbeOk) return true;
+  if (state.setupEditingIndex == null) return false;
+  const saved = state.setupDraft?.projects?.[state.setupEditingIndex];
+  if (!saved) return false;
+  const current = String(els.setupPath?.value || "").trim();
+  return Boolean(current) && current === String(saved.path || "").trim();
 }
 
 function ensureSetupPrimary() {
@@ -382,7 +390,7 @@ function customRowState(row) {
 function syncNoPkgUi(hasPackageJson) {
   const showWarning = state.setupProbeOk && !hasPackageJson;
   els.setupNoPkg.hidden = !showWarning;
-  els.setupAddCustomWrap.hidden = !state.setupProbeOk;
+  els.setupAddCustomWrap.hidden = !formPathReady();
 }
 
 function hasCompleteCommand() {
@@ -401,7 +409,7 @@ function hasCompleteCommand() {
 
 function syncCommitButton() {
   const hasName = Boolean(els.setupName.value.trim() || els.setupId.value.trim());
-  els.setupCommitProject.disabled = !(state.setupProbeOk && hasName && hasCompleteCommand());
+  els.setupCommitProject.disabled = !(formPathReady() && hasName && hasCompleteCommand());
 }
 
 function syncAppearanceFields() {
@@ -550,6 +558,7 @@ export function openProjectForm(index = null) {
   setProbeStatus(els.setupPathStatus, true, "");
   renderSetupScripts();
   syncTestOverviewFields();
+  syncNoPkgUi(true);
   syncCommitButton();
   syncDescriptionCount();
   syncSetupAddButton();
@@ -560,7 +569,7 @@ function collectProjectFromForm() {
   const projectPath = els.setupPath.value.trim();
   let id = els.setupId.value.trim();
   const name = els.setupName.value.trim();
-  if (!projectPath || !state.setupProbeOk) throw new Error("Choose a project path, then Probe.");
+  if (!projectPath || !formPathReady()) throw new Error("Choose a project path, then Probe.");
   if (!name && !id) throw new Error("Name is required.");
   if (!id) {
     id = slugifyId(name);

@@ -37,7 +37,7 @@ Every response (JSON, static, SSE, 405) includes [securityHeaders](origin.md).
 
 `buildStatus()` is the snapshot for `GET /api/status` and the SSE `status` event. Health is not polled. Each pill has `reason`: `job` (long-running dashboard job), `port` (TCP open, no such job), or `down` (idle). `up` is true unless `down`.
 
-- **Full:** git (8s cache via [git-info.md](../jobs/git-info.md)), `package.json` state, health, jobs, public commands, optional last-test rows. Cards show `repos[].git` (branch · dirty); `unknown` / `missing` omit the line.
+- **Full:** git via [git-info.md](../jobs/git-info.md), `package.json` state, health, jobs, public commands, optional last-test rows. Cards show `repos[].git` (branch · dirty); `unknown` / `missing` omit the line. `GET /api/status` (Refresh) passes `skipGitCache: true`. SSE initial `buildStatus()` may use the 8s cache.
 - **Light** (`{ light: true }`): reuses `lastFullStatus` git / pkg / commands; refreshes health, jobs, and last tests. Job start/stop uses light so restart finalize does not double-rebuild.
 
 `readAllLastTestRuns` runs only when `showTestOverview` is on. Test-job finalize still writes a snapshot.
@@ -48,7 +48,7 @@ Host check runs first. All `/api/*` then pass `isLocalOrigin`.
 
 | Method | Path | Purpose |
 |--------|------|---------|
-| GET | `/api/status` | Full status snapshot |
+| GET | `/api/status` | Full status snapshot (`skipGitCache`) |
 | GET | `/api/health` | Health snapshot; also SSE `health` |
 | GET | `/api/events` | SSE (initial `status` + heartbeat every 20s) |
 | GET | `/api/logs/:id` | Job logs + partial + prompt |

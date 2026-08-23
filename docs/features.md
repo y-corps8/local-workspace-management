@@ -345,7 +345,7 @@ How artifacts are merged: [Last test runs](test-results.md).
 
 **What it is.** Every project, including hidden ones, with **Add project** even when the list is empty.
 
-**How to use it.** Drag to reorder. **Show on dashboard** hides without deleting. **Edit** opens the form. Confirmed **Remove** persists immediately; if no projects remain, stay on Settings with the empty list and **Add project**. Path is edited on this form, not on the card.
+**How to use it.** Drag to reorder. **Show on dashboard** hides without deleting. **Edit** opens the form. **Update project** does not need Probe when the path is unchanged. Changing the path still needs Probe. Confirmed **Remove** persists immediately; if no projects remain, stay on Settings with the empty list and **Add project**. Path is edited on this form, not on the card.
 
 ![Edit project form with Update project](images/settings-edit.png)
 

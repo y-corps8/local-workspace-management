@@ -192,7 +192,7 @@ export function createOverviewApp({ host = HOST, port = PORT } = {}) {
     );
   }
 
-  async function buildStatus({ light = false } = {}) {
+  async function buildStatus({ light = false, skipGitCache = false } = {}) {
     if (light && lastFullStatus) {
       const health = await collectHealth();
       const jobsPublic = [...jobs.values()].map(publicJob);
@@ -227,7 +227,7 @@ export function createOverviewApp({ host = HOST, port = PORT } = {}) {
       REPO_ORDER.map(async (repoId) => {
         const repo = REPOS[repoId];
         const pkg = pkgByRepo[repoId];
-        gitByRepo[repoId] = pkg.exists ? await gitInfo(repo.root) : { branch: "missing", dirty: false };
+        gitByRepo[repoId] = pkg.exists ? await gitInfo(repo.root, { skipCache: skipGitCache }) : { branch: "missing", dirty: false };
       })
     );
     const repos = REPO_ORDER.map((repoId) => {
@@ -279,7 +279,7 @@ export function createOverviewApp({ host = HOST, port = PORT } = {}) {
     }
 
     if (req.method === "GET" && url.pathname === "/api/status") {
-      sendJson(res, 200, await buildStatus());
+      sendJson(res, 200, await buildStatus({ skipGitCache: true }));
       return;
     }
 

@@ -14,7 +14,7 @@ npx @y-corps/locws start
 Copy the address it prints (`http://127.0.0.1:4174`) into a browser. If that port is busy, start with `OVERVIEW_PORT` set to another port.
 
 - Same app in a new browser tab: `locws start --browser`
-- Its own window: `locws start --window` — closing that window stops the app
+- Its own window: `locws start --window` — closing that window stops the app. Needs the OS WebView tools (macOS `swiftc`, Linux WebKitGTK, Windows WebView2 + `csc`); a browser tab works without them. Install commands: [npm scripts](npm-scripts.md).
 - Upgrade a global install: `locws upgrade`
 
 From a git clone of this repo, `npm start` / `start:browser` / `start:window` are the same server. Details: [npm scripts](npm-scripts.md).
@@ -112,7 +112,7 @@ Keyboard: `/` focuses the project filter (ignored on Settings); `Ctrl` or `⌘` 
 
 ![Settings list with appearance, last test runs, and projects](images/settings.png)
 
-**Edit** opens the same kind of form as add, with **Update project** instead of **Add project**. The lead on edit is about changing the folder or commands, not adding a repo. **Id** stays under **Advanced**. **Cancel** or **Update project** from Settings Edit stays on the Settings list.
+**Edit** opens the same kind of form as add, with **Update project** instead of **Add project**. The lead on edit is about changing the folder or commands, not adding a repo. **Id** stays under **Advanced**. You can **Update project** without Probe when the path is unchanged (name, description, commands). Changing the path still needs Probe. **Cancel** or **Update project** from Settings Edit stays on the Settings list.
 
 ![Edit project form with Update project](images/settings-edit.png)
 

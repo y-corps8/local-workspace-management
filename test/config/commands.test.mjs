@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import path from "node:path";
 import { test } from "node:test";
 import { commandAvailability, parseOverviewPort, publicCommand, sanitizeRawWorkspace, shouldReloadWorkspaceWatch } from "../../src/config/commands.mjs";
 
@@ -124,6 +125,31 @@ test("sanitize keeps a non-destructive primaryScript and drops the rest", () => 
     ],
   });
   assert.equal(destructive.projects[0].primaryScript, undefined);
+});
+
+test("sanitize migrates leftover fields and drops them", () => {
+  const clean = sanitizeRawWorkspace({
+    workspaceRoot: "/tmp/ws",
+    metroPort: 19000,
+    expoDevClientScheme: "myapp",
+    projects: [
+      {
+        id: "app",
+        path: "my-api",
+        role: "backend",
+        metroPort: 8082,
+        commands: [{ script: "start", group: "tooling", argv: ["echo", "start"] }],
+      },
+    ],
+  });
+  assert.equal(clean.workspaceRoot, undefined);
+  assert.equal(clean.metroPort, undefined);
+  assert.equal(clean.projects[0].role, undefined);
+  assert.equal(clean.projects[0].metroPort, undefined);
+  assert.equal(clean.projects[0].description, "backend");
+  assert.equal(clean.projects[0].commands[0].group, "tools");
+  assert.equal(path.isAbsolute(clean.projects[0].path), true);
+  assert.equal(clean.projects[0].path, path.resolve("/tmp/ws", "my-api"));
 });
 
 test("sanitize drops leftover accent fields", () => {
