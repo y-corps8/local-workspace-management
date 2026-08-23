@@ -93,7 +93,7 @@ locws start --window
 # clone: npm run start:window
 ```
 
-`--open` is an alias of `--window`. The window needs the OS WebView toolchain (macOS `swiftc`, Linux WebKitGTK, Windows WebView2). If that is missing, the server keeps listening and logs an install hint.
+`--open` is an alias of `--window`. The window needs the OS WebView tools (macOS `swiftc`, Linux WebKitGTK, Windows WebView2 + `csc`). If that is missing, the server keeps listening and logs an install hint. Install commands: [npm scripts](npm-scripts.md).
 
 ### Change the port
 
