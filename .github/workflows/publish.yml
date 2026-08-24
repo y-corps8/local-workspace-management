@@ -37,7 +37,6 @@ jobs:
       - name: Release tag must match package.json version
         env:
           TAG: ${{ github.event.release.tag_name }}
-          PRERELEASE: ${{ github.event.release.prerelease }}
         run: |
           version="$(node -p "require('./package.json').version")"
           expected="v${version}"
@@ -45,28 +44,17 @@ jobs:
             echo "Release tag ${TAG} must be ${expected} (package.json version ${version})."
             exit 1
           fi
-          case "$version" in
-            *-*)
-              if [ "$PRERELEASE" != "true" ]; then
-                echo "Prerelease version ${version} must be published as a GitHub pre-release."
-                exit 1
-              fi
-              ;;
-            *)
-              if [ "$PRERELEASE" = "true" ]; then
-                echo "GitHub pre-release requires a prerelease package.json version (e.g. 0.1.1-beta.1)."
-                exit 1
-              fi
-              ;;
-          esac
       - run: npm test
       - name: Publish to npm
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-          PRERELEASE: ${{ github.event.release.prerelease }}
         run: |
-          if [ "$PRERELEASE" = "true" ]; then
-            npm publish --access public --provenance --tag beta
-          else
-            npm publish --access public --provenance
-          fi
+          version="$(node -p "require('./package.json').version")"
+          case "$version" in
+            *-*)
+              npm publish --access public --provenance --tag beta
+              ;;
+            *)
+              npm publish --access public --provenance
+              ;;
+          esac
