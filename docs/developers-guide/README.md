@@ -48,7 +48,7 @@ Project `path` is per project: absolute or `~/...`. Leftover relative paths reso
 | `npm run start:browser` | Same + may `open` the loopback URL |
 | `npm run start:window` | Same + native WebView; closing the window stops the server |
 | `locws start` / `locws start --browser` / `locws start --window` | Same as the three scripts (published bin) |
-| `locws upgrade` | Hardcoded `npm install -g @y-corps/locws@latest`; does not start the server |
+| `locws upgrade` | Hardcoded `npm install -g @y-corps/locws@latest --prefer-online` (npm next to this Node); copies missing `workspace.json` / last-test snapshot into packaged user dirs; does not start the server; does not clear cache |
 | `npm test` | `node --import ./test/preload.mjs --test test/*/*.test.mjs` |
 
 `test/preload.mjs` sets `OVERVIEW_SKIP_WORKSPACE_LOAD=1` so tests never read or write your `workspace.json`. Details: [npm scripts](../npm-scripts.md), [test catalog](test.md).
@@ -78,6 +78,7 @@ Project `path` is per project: absolute or `~/...`. Leftover relative paths reso
 | [argv.md](src/config/argv.md) | [`src/config/argv.mjs`](../../src/config/argv.mjs) |
 | [merge-command.md](src/config/merge-command.md) | [`src/config/merge-command.mjs`](../../src/config/merge-command.mjs) |
 | [update-check.md](src/cli/update-check.md) | [`src/cli/update-check.mjs`](../../src/cli/update-check.mjs) |
+| [preserve-workspace.md](src/cli/preserve-workspace.md) | [`src/cli/preserve-workspace.mjs`](../../src/cli/preserve-workspace.mjs) |
 | [open-external.md](src/cli/open-external.md) | [`src/cli/open-external.mjs`](../../src/cli/open-external.mjs) |
 | [app-window.md](src/window/app-window.md) | [`src/window/app-window.mjs`](../../src/window/app-window.mjs) |
 | [app-window-shared.md](src/window/app-window-shared.md) | [`src/window/app-window-shared.mjs`](../../src/window/app-window-shared.mjs) |

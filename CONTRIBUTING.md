@@ -77,6 +77,6 @@ This project follows the [Code of Conduct](CODE_OF_CONDUCT.md).
 Once a pull request is **approved and merged to `main`**, those changes ship in the **next released version** of `locws` on npm. Only [CODEOWNERS](.github/CODEOWNERS) publish. GitHub Releases trigger [publish.yml](.github/workflows/publish.yml): the tag must be `v` plus `package.json` `version`.
 
 - Version contains `-` (tag like `v0.1.1-beta.1`) → npm dist-tag **`beta`**. Testers: `npx @y-corps/locws@beta` or `npm install -g @y-corps/locws@beta`.
-- Version is `x.y.z` only (tag like `v0.1.1`) → npm **`latest`**. `npx @y-corps/locws` / `locws upgrade` stay on this tag (`npm install -g @y-corps/locws@latest`).
+- Version is `x.y.z` only (tag like `v0.1.1`) → npm **`latest`** (`npm publish --tag latest`). `npx @y-corps/locws` / `locws upgrade` stay on this tag (`npm install -g @y-corps/locws@latest`).
 
 The GitHub “This is a pre-release” checkbox does not choose the dist-tag and does not fail the job. `locws upgrade` never installs `beta`.

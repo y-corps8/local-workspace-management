@@ -18,6 +18,7 @@ Field meanings for operators: [workspace-config.md](../../../workspace-config.md
 | `NPM_PACKAGE_NAME` | `@y-corps/locws` |
 | `appRootFrom` / `APP_ROOT` | Directory of `package.json` |
 | `isPackagedInstall` | `node_modules` path segment in `APP_ROOT` |
+| `isLocwsBinInvocation` | `argv[1]` is `locws` / `locws.cmd` / `locws.ps1` in the same directory as `process.execPath` (`npm link` / global bin) |
 | `userConfigDir` / `userCacheDir` | XDG or Windows AppData dirs named `locws` |
 | `resolveDataPaths` | Clone vs packaged vs `OVERVIEW_DATA_DIR` |
 | `CACHE_DIR` | Clone: `<APP_ROOT>/.cache`. Packaged: `~/.cache/locws` (Windows `%LOCALAPPDATA%\locws`) |
@@ -28,10 +29,10 @@ Field meanings for operators: [workspace-config.md](../../../workspace-config.md
 
 ## How it works
 
-If `OVERVIEW_DATA_DIR` is set, `workspace.json` and `.cache/` live under that folder (tests / power users). Otherwise a git checkout (no `node_modules` in `APP_ROOT`) keeps data at the repo root. Any install under `node_modules` (npx cache, `npm i -g`) uses the user config/cache dirs.
+If `OVERVIEW_DATA_DIR` is set, `workspace.json` and `.cache/` live under that folder (tests / power users). Otherwise a git checkout (no `node_modules` in `APP_ROOT`) keeps data at the repo root. Any install under `node_modules` (npx cache, `npm i -g`) uses the user config/cache dirs. `isLocwsBinInvocation` does **not** change data paths; [update-check.mjs](../cli/update-check.md) uses it only so `npm link` `locws upgrade` can spawn npm.
 
 Windows tests pass `platform: "win32"` so joins use `path.win32`. Runtime uses the real OS.
 
 ## Tests
 
-[`test/paths.test.mjs`](../../../../test/config/paths.test.mjs) — clone, packaged unix/XDG, `OVERVIEW_DATA_DIR`, Windows `APPDATA`, `node_modules-backup` is not packaged.
+[`test/paths.test.mjs`](../../../../test/config/paths.test.mjs) — clone, packaged unix/XDG, `OVERVIEW_DATA_DIR`, Windows `APPDATA`, `node_modules-backup` is not packaged, `isLocwsBinInvocation` for bin-next-to-Node vs `node src/server.mjs`.

@@ -19,7 +19,7 @@ locws start
 
 - Prints [http://127.0.0.1:4174](http://127.0.0.1:4174) — copy it into a browser. Ctrl+C stops the server.
 - Same server, open a tab: `locws start --browser`. Dedicated window: `locws start --window`. Details: [npm scripts](docs/npm-scripts.md).
-- If a newer npm version exists, the terminal prints it. Upgrade with `locws upgrade` (runs `npm install -g @y-corps/locws@latest`). Git clones do not nag; use `git pull` there. Testers: `npx @y-corps/locws@beta start`.
+- If a newer npm version exists, the terminal prints it. Upgrade with `locws upgrade` (runs `npm install -g @y-corps/locws@latest --prefer-online`). The package name is **`@y-corps/locws`** (`npm i -g locws` is not this package). Git clones do not nag; use `git pull` there. Testers: `npx @y-corps/locws@beta start`.
 
 Then **Add project** → Browse or paste a path (absolute or `~/...`) → **Probe** → pick commands → **Add project**. **Cancel** dismisses without saving. Step by step: [User guide](docs/user-guide.md).
 

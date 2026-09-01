@@ -14,9 +14,12 @@ import {
   parseLocwsArgv,
   parseSemver,
   readInstalledVersion,
+  npmCliPath,
   runUpgrade,
+  shouldRunUpgrade,
   updateNoticeText,
   upgradeArgv,
+  upgradeSpawnOptions,
   upgradeSuccessMessage,
 } from "../../src/cli/update-check.mjs";
 
@@ -261,9 +264,73 @@ test("checkForUpdate notifies when latest is the same x.y.z as a prerelease curr
   assert.deepEqual(found, { current: "0.1.1-beta.1", latest: "0.1.1" });
 });
 
-test("upgradeArgv is hardcoded npm install -g @y-corps/locws@latest", () => {
-  assert.deepEqual(upgradeArgv("darwin"), ["npm", "install", "-g", "@y-corps/locws@latest"]);
-  assert.deepEqual(upgradeArgv("win32"), ["npm.cmd", "install", "-g", "@y-corps/locws@latest"]);
+test("upgradeArgv is hardcoded npm install -g @y-corps/locws@latest --prefer-online", () => {
+  const missing = () => false;
+  assert.deepEqual(upgradeArgv({ platform: "darwin", execPath: "/usr/bin/node", existsSync: missing }), [
+    "npm",
+    "install",
+    "-g",
+    "@y-corps/locws@latest",
+    "--prefer-online",
+  ]);
+  assert.deepEqual(upgradeArgv({ platform: "win32", execPath: "C:\\nodejs\\node.exe", existsSync: missing }), [
+    "npm.cmd",
+    "install",
+    "-g",
+    "@y-corps/locws@latest",
+    "--prefer-online",
+  ]);
+});
+
+test("upgradeArgv uses npm next to this Node when that file exists", () => {
+  assert.deepEqual(
+    upgradeArgv({
+      platform: "darwin",
+      execPath: "/usr/local/bin/node",
+      existsSync: (file) => file === "/usr/local/bin/npm",
+    }),
+    ["/usr/local/bin/npm", "install", "-g", "@y-corps/locws@latest", "--prefer-online"]
+  );
+  assert.deepEqual(
+    upgradeArgv({
+      platform: "win32",
+      execPath: "C:\\nodejs\\node.exe",
+      existsSync: (file) => file === "C:\\nodejs\\npm.cmd",
+    }),
+    ["C:\\nodejs\\npm.cmd", "install", "-g", "@y-corps/locws@latest", "--prefer-online"]
+  );
+});
+
+test("npmCliPath falls back to npm / npm.cmd when the sibling file is missing", () => {
+  assert.equal(npmCliPath({ platform: "darwin", execPath: "/usr/bin/node", existsSync: () => false }), "npm");
+  assert.equal(npmCliPath({ platform: "win32", execPath: "C:\\nodejs\\node.exe", existsSync: () => false }), "npm.cmd");
+});
+
+test("upgradeSpawnOptions enables a Windows shell for npm.cmd", () => {
+  assert.deepEqual(upgradeSpawnOptions("darwin"), { stdio: "inherit" });
+  assert.deepEqual(upgradeSpawnOptions("win32"), { stdio: "inherit", shell: true, windowsHide: true });
+});
+
+test("shouldRunUpgrade allows a locws bin next to Node even when APP_ROOT is a clone", () => {
+  assert.equal(
+    shouldRunUpgrade({
+      packaged: false,
+      argv1: "/Users/me/.nvm/versions/node/v22.0.0/bin/locws",
+      execPath: "/Users/me/.nvm/versions/node/v22.0.0/bin/node",
+      platform: "darwin",
+    }),
+    true
+  );
+  assert.equal(
+    shouldRunUpgrade({
+      packaged: false,
+      argv1: "/Users/me/Projects/local-workspace-management/src/server.mjs",
+      execPath: "/Users/me/.nvm/versions/node/v22.0.0/bin/node",
+      platform: "darwin",
+    }),
+    false
+  );
+  assert.equal(shouldRunUpgrade({ packaged: true, argv1: "/tmp/server.mjs", execPath: "/usr/bin/node" }), true);
 });
 
 test("runUpgrade from a clone refuses without spawning npm", async () => {
@@ -271,9 +338,14 @@ test("runUpgrade from a clone refuses without spawning npm", async () => {
   let spawned = false;
   const code = await runUpgrade({
     packaged: false,
+    argv1: "/Users/me/Projects/local-workspace-management/src/server.mjs",
+    execPath: "/usr/bin/node",
     spawnFn() {
       spawned = true;
       throw new Error("should not spawn");
+    },
+    preserveFn() {
+      throw new Error("should not preserve on clone");
     },
     log: {
       error: (message) => log.error.push(message),
@@ -291,13 +363,19 @@ test("upgradeSuccessMessage tells the user to run locws start", () => {
 
 test("runUpgrade spawns npm and prints success on exit 0", async () => {
   const messages = [];
+  let preserveCalls = 0;
   const code = await runUpgrade({
     packaged: true,
     platform: "darwin",
+    execPath: "/usr/bin/node",
+    existsSync: () => false,
+    preserveFn() {
+      preserveCalls += 1;
+    },
     spawnFn(file, args, options) {
       assert.equal(file, "npm");
-      assert.deepEqual(args, ["install", "-g", "@y-corps/locws@latest"]);
-      assert.equal(options.stdio, "inherit");
+      assert.deepEqual(args, ["install", "-g", "@y-corps/locws@latest", "--prefer-online"]);
+      assert.deepEqual(options, { stdio: "inherit" });
       const child = new EventEmitter();
       queueMicrotask(() => child.emit("exit", 0));
       return child;
@@ -309,6 +387,101 @@ test("runUpgrade spawns npm and prints success on exit 0", async () => {
   });
   assert.equal(code, 0);
   assert.equal(messages[0], upgradeSuccessMessage());
+  assert.equal(preserveCalls, 2);
+});
+
+test("runUpgrade preserves before spawn only when npm exits non-zero", async () => {
+  let preserveCalls = 0;
+  const code = await runUpgrade({
+    packaged: true,
+    platform: "darwin",
+    execPath: "/usr/bin/node",
+    existsSync: () => false,
+    preserveFn() {
+      preserveCalls += 1;
+    },
+    spawnFn() {
+      const child = new EventEmitter();
+      queueMicrotask(() => child.emit("exit", 1));
+      return child;
+    },
+    log: { error: () => {}, log: () => {} },
+  });
+  assert.equal(code, 1);
+  assert.equal(preserveCalls, 1);
+});
+
+test("runUpgrade still spawns npm if preserveFn throws", async () => {
+  let spawned = false;
+  const errors = [];
+  const code = await runUpgrade({
+    packaged: true,
+    platform: "darwin",
+    execPath: "/usr/bin/node",
+    existsSync: () => false,
+    preserveFn() {
+      throw new Error("copy failed");
+    },
+    spawnFn() {
+      spawned = true;
+      const child = new EventEmitter();
+      queueMicrotask(() => child.emit("exit", 0));
+      return child;
+    },
+    log: {
+      error: (message) => errors.push(message),
+      log: () => {},
+    },
+  });
+  assert.equal(code, 0);
+  assert.equal(spawned, true);
+  assert.equal(errors[0], "copy failed");
+});
+
+test("runUpgrade from an npm-linked locws bin still spawns npm", async () => {
+  let spawned = false;
+  const code = await runUpgrade({
+    packaged: false,
+    platform: "darwin",
+    argv1: "/Users/me/.nvm/versions/node/v22.0.0/bin/locws",
+    execPath: "/Users/me/.nvm/versions/node/v22.0.0/bin/node",
+    existsSync: (file) => file === "/Users/me/.nvm/versions/node/v22.0.0/bin/npm",
+    preserveFn() {},
+    spawnFn(file, args, options) {
+      spawned = true;
+      assert.equal(file, "/Users/me/.nvm/versions/node/v22.0.0/bin/npm");
+      assert.deepEqual(args, ["install", "-g", "@y-corps/locws@latest", "--prefer-online"]);
+      assert.deepEqual(options, { stdio: "inherit" });
+      const child = new EventEmitter();
+      queueMicrotask(() => child.emit("exit", 0));
+      return child;
+    },
+    log: { error: () => {}, log: () => {} },
+  });
+  assert.equal(code, 0);
+  assert.equal(spawned, true);
+});
+
+test("runUpgrade on Windows passes shell and windowsHide", async () => {
+  const code = await runUpgrade({
+    packaged: true,
+    platform: "win32",
+    execPath: "C:\\nodejs\\node.exe",
+    existsSync: () => false,
+    preserveFn() {},
+    spawnFn(file, args, options) {
+      assert.equal(file, "npm.cmd");
+      assert.deepEqual(args, ["install", "-g", "@y-corps/locws@latest", "--prefer-online"]);
+      assert.equal(options.shell, true);
+      assert.equal(options.windowsHide, true);
+      assert.equal(options.stdio, "inherit");
+      const child = new EventEmitter();
+      queueMicrotask(() => child.emit("exit", 0));
+      return child;
+    },
+    log: { error: () => {}, log: () => {} },
+  });
+  assert.equal(code, 0);
 });
 
 test("fetchLatestVersion encodes a scoped package name in the registry path", async () => {

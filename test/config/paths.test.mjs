@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import path from "node:path";
 import { test } from "node:test";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { APP_ROOT, appRootFrom, isPackagedInstall, resolveDataPaths } from "../../src/config/paths.mjs";
+import { APP_ROOT, appRootFrom, isLocwsBinInvocation, isPackagedInstall, resolveDataPaths } from "../../src/config/paths.mjs";
 
 test("clone APP_ROOT keeps workspace.json and .cache at the repo root", () => {
   const appRoot = "/Users/me/Projects/local-workspace-management";
@@ -78,6 +78,44 @@ test("packaged Windows uses APPDATA and LOCALAPPDATA", () => {
 
 test("folder named node_modules-backup is not a packaged install", () => {
   assert.equal(isPackagedInstall("/Users/me/node_modules-backup/locws", "darwin"), false);
+});
+
+test("isLocwsBinInvocation is true when locws sits next to this Node", () => {
+  assert.equal(
+    isLocwsBinInvocation({
+      argv1: "/Users/me/.nvm/versions/node/v22.0.0/bin/locws",
+      execPath: "/Users/me/.nvm/versions/node/v22.0.0/bin/node",
+      platform: "darwin",
+    }),
+    true
+  );
+  assert.equal(
+    isLocwsBinInvocation({
+      argv1: "C:\\Program Files\\nodejs\\locws.cmd",
+      execPath: "C:\\Program Files\\nodejs\\node.exe",
+      platform: "win32",
+    }),
+    true
+  );
+});
+
+test("isLocwsBinInvocation is false for node src/server.mjs on a clone", () => {
+  assert.equal(
+    isLocwsBinInvocation({
+      argv1: "/Users/me/Projects/local-workspace-management/src/server.mjs",
+      execPath: "/Users/me/.nvm/versions/node/v22.0.0/bin/node",
+      platform: "darwin",
+    }),
+    false
+  );
+  assert.equal(
+    isLocwsBinInvocation({
+      argv1: "/Users/me/.nvm/versions/node/v22.0.0/bin/npx",
+      execPath: "/Users/me/.nvm/versions/node/v22.0.0/bin/node",
+      platform: "darwin",
+    }),
+    false
+  );
 });
 
 test("appRootFrom walks up until package.json", () => {

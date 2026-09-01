@@ -111,7 +111,7 @@ locws start --window
 
 **What it is.** Updates a global `locws` install to the latest npm release. It does not start the dashboard.
 
-**How to use it.** Run `locws upgrade` (hardcoded `npm install -g @y-corps/locws@latest`). A packaged start may print a newer-version notice on stderr; the UI does not show an update modal. On a git clone, use `git pull` and `npm start` — `locws upgrade` is not for clones. Testers of a pre-release: `npx @y-corps/locws@beta start`.
+**How to use it.** Run `locws upgrade` (hardcoded `npm install -g @y-corps/locws@latest --prefer-online`). The install name is **`@y-corps/locws`**; after install the command is **`locws`**. `npm i -g locws` is not this package. Pin a published version with `npm install -g @y-corps/locws@0.1.1`. `locws upgrade` copies `workspace.json` and `last-test-runs.json` into `~/.config/locws/` and `~/.cache/locws/` only if those files are missing — it does not overwrite them or clear cache. A packaged start may print a newer-version notice on stderr; the UI does not show an update modal. On a git clone, use `git pull` and `npm start` — `node src/server.mjs upgrade` is not for clones. `npm link` / global `locws upgrade` is allowed. Testers of a pre-release: `npx @y-corps/locws@beta start`.
 
 ### Stop the server
 
@@ -273,7 +273,7 @@ locws start --window
 
 **What it is.** Each run gets a tab (`Project · command`).
 
-**How to use it.** Switch tabs to change which log you are reading. **Clear** clears the current log. Close a tab with **×**.
+**How to use it.** Switch tabs to change which log you are reading. **Copy all** copies the visible log (timestamps omitted; **Filter logs** hides lines from the copy). Select a range and use `Ctrl` / `⌘` + `C` or the OS Copy command for that selection. **Clear** clears the current log. Close a tab with **×**.
 
 ### Filter logs
 

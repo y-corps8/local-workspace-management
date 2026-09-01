@@ -18,7 +18,7 @@ Light theme overrides page chrome only. `.log-section` re-declares dark `--accen
 
 Form controls use `--accent` (not the OS default blue). Checkboxes, radios, and running buttons follow the same token.
 
-`.layout` is a column: topbar, `.workspace-main` (scroll), console dock. Console height is `flex: 0 0 var(--console-height)`. `.log-section.is-collapsed` hides tabs / log / toolbar / filter / **Stop all**; the resize handle is disabled while collapsed. `#log-summary` is muted ellipsis text on the collapsed title row. `.log-section.has-running .log-live` stays `--pending`.
+`.layout` is a column: topbar, `.workspace-main` (scroll), console dock. Console height is `flex: 0 0 var(--console-height)`. `.log-section.is-collapsed` hides tabs / log / toolbar / filter / **Stop all**; the resize handle is disabled while collapsed. `#log-summary` is muted ellipsis text on the collapsed title row. `.log-section.has-running .log-live` stays `--pending`. `.log-panel` / log lines are `user-select: text`; `.log-time` is `user-select: none`.
 
 Cards: three columns (two below 1100px, one below 800px). Leftover cells do not stretch. `is-running` left gold inset, `is-missing-path` banner. Drag outline and health `is-flash` use `--accent`. `.project-git` is a muted mono line under the title. `.chip-idle` is outline + muted (not fail red). Health dots: `.dot-running` gold, `.dot-port` green, `.dot-idle` muted.
 

@@ -2,7 +2,7 @@
 
 Start entry (`#!/usr/bin/env node`). `package.json` `bin.locws` and the npm start scripts both run this file. Does **not** implement HTTP routes or jobs. Importing this file starts the process (`--help` / `--version` / `upgrade` / missing `start` exit before `listen`).
 
-A **git clone** is not the locws CLI: `--help` lists `npm start` / `start:browser` / `start:window` and `node src/server.mjs --version`; `upgrade` errors with `git pull` / `npm start`; no registry check. **Packaged** installs (`npx` / global latest or beta) get locws `--help`, `--version`, `locws upgrade`, and the update notice.
+A **git clone** is not the locws CLI: `--help` lists `npm start` / `start:browser` / `start:window` and `node src/server.mjs --version`; `node src/server.mjs upgrade` errors with `git pull` / `npm start`; no registry check. **Packaged** installs (`npx` / global latest or beta) get locws `--help`, `--version`, `locws upgrade`, and the update notice. `npm link` `locws upgrade` is allowed (bin next to Node).
 
 `locws start --window` / `--open` opens a native WebView via [app-window.mjs](window/app-window.md). `locws start --browser` may open the loopback URL in the default browser. `locws start` only prints the URL. `--version` / `-v` / `version` print `package.json` `version` and exit 0. Bare `locws` prints usage and exits 1.
 

@@ -38,6 +38,26 @@ export function isPackagedInstall(appRoot, platform = process.platform) {
   return p.normalize(String(appRoot || "")).split(p.sep).includes("node_modules");
 }
 
+/**
+ * True when this process was launched as the `locws` bin next to this Node
+ * (`<prefix>/bin/locws` beside `<prefix>/bin/node`). Covers `npm link`, where
+ * APP_ROOT realpaths to a git clone and `isPackagedInstall` is false.
+ */
+export function isLocwsBinInvocation({
+  argv1 = process.argv[1],
+  execPath = process.execPath,
+  platform = process.platform,
+} = {}) {
+  const p = pathApi(platform);
+  const script = p.normalize(String(argv1 || ""));
+  const node = p.normalize(String(execPath || ""));
+  if (!script || !node) return false;
+  const base = p.basename(script);
+  const locwsBins = new Set([CLI_NAME, `${CLI_NAME}.cmd`, `${CLI_NAME}.ps1`]);
+  if (!locwsBins.has(base)) return false;
+  return p.dirname(script) === p.dirname(node);
+}
+
 export function userConfigDir({ platform = process.platform, env = process.env, homedir = os.homedir() } = {}) {
   const p = pathApi(platform);
   if (platform === "win32") {
