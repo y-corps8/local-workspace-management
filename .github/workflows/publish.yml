@@ -5,7 +5,7 @@ on:
     types: [published]
 
 permissions:
-  contents: read
+  contents: write
   id-token: write
 
 jobs:
@@ -56,5 +56,23 @@ jobs:
               ;;
             *)
               npm publish --access public --provenance --tag latest
+              ;;
+          esac
+      - name: GitHub latest vs pre-release follows the version
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_ID: ${{ github.event.release.id }}
+        run: |
+          version="$(node -p "require('./package.json').version")"
+          case "$version" in
+            *-*)
+              gh api --method PATCH "/repos/${GITHUB_REPOSITORY}/releases/${RELEASE_ID}" \
+                -F prerelease=true \
+                -f make_latest=false
+              ;;
+            *)
+              gh api --method PATCH "/repos/${GITHUB_REPOSITORY}/releases/${RELEASE_ID}" \
+                -F prerelease=false \
+                -f make_latest=true
               ;;
           esac

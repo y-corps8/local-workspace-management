@@ -11,7 +11,7 @@ src/                    Node server — server.mjs (CLI + listen) plus domain fo
 public/                 UI only — index.html, theme-boot.js, app.js (ESM orchestrator), js/ modules, styles.css; icons in assets/
 docs/                   User-facing understanding docs (not one page per module)
 docs/developers-guide/  Code map for contributors (one page per source file; src/ pages follow the same folders)
-.github/                Issue/PR templates, CI, and npm publish on GitHub Releases (version with `-` → dist-tag beta; otherwise latest)
+.github/                Issue/PR templates, CI, and npm publish on GitHub Releases (version with `-` → npm beta + GitHub pre-release; otherwise npm latest + GitHub latest release)
 workspace.json          gitignored runtime config at clone root (template: workspace.example.json); packaged: ~/.config/locws/
 .cache/                 gitignored last-run snapshots and native window helpers (clone root, or ~/.cache/locws when packaged)
 test/                   node:test fixtures (preload at test root; specs under http/ jobs/ config/ window/ cli/)
