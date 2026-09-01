@@ -4,14 +4,14 @@ Defined in [`package.json`](../package.json). The published binary is **`locws`*
 
 ## Users (`locws`)
 
-After `npm install -g @y-corps/locws` (or via `npx @y-corps/locws start`). Testers of a GitHub pre-release use `npx @y-corps/locws@beta start` or `npm install -g @y-corps/locws@beta` (npm dist-tag **`beta`**). `npx @y-corps/locws` and `locws upgrade` stay on **`latest`**.
+After `npm install -g @y-corps/locws` (or via `npx @y-corps/locws start`). Testers of a GitHub pre-release use `npx @y-corps/locws@beta start` or `npm install -g @y-corps/locws@beta` (npm dist-tag **`beta`**). `npx @y-corps/locws` and `locws upgrade` stay on **`latest`**. The install name is **`@y-corps/locws`**; the command after install is **`locws`**. `npm i -g locws` is a different (blocked) name and will not install this package.
 
 | Command | Same as | What it does |
 |---------|---------|----------------|
 | `locws start` | `npm start` | Server only, prints `http://127.0.0.1:4174` (or `OVERVIEW_PORT`) |
 | `locws start --browser` | `npm run start:browser` | Same server, opens the default browser |
 | `locws start --window` | `npm run start:window` | Same server, native WebView; closing the window stops the process |
-| `locws upgrade` | *(CLI only)* | `npm install -g @y-corps/locws@latest`. Does **not** start the dashboard. Not an npm script. |
+| `locws upgrade` | *(CLI only)* | `npm install -g @y-corps/locws@latest --prefer-online` (npm next to this Node). Copies missing `workspace.json` / `last-test-runs.json` into packaged user dirs. Does **not** start the dashboard, does **not** clear `~/.cache/locws`. Not an npm script. Pin with `npm install -g @y-corps/locws@<version>`. |
 | `locws --version` / `-v` | `node src/server.mjs --version` | Prints `package.json` `version` and exits. Also `locws version`. Does **not** start the dashboard. |
 | `locws --help` | `node src/server.mjs --help` | Flags, upgrade, `OVERVIEW_PORT`, and the resolved `workspace.json` path. Also `locws help`. |
 
@@ -24,7 +24,7 @@ New version available: 0.2.0 (current 0.1.0)
 Run: locws upgrade
 ```
 
-Then the server starts as usual. Offline or timeout: no notice. The dashboard UI does not show an update modal. The browser never runs `npm install`; only `locws upgrade` does, with a hardcoded argv.
+Then the server starts as usual. Offline or timeout: no notice. The dashboard UI does not show an update modal. The browser never runs `npm install`; only `locws upgrade` does, with a hardcoded argv (`npm install -g @y-corps/locws@latest --prefer-online`).
 
 `workspace.json` for packaged installs: `~/.config/locws/workspace.json` (Windows `%APPDATA%\locws\workspace.json`). See [workspace-config.md](workspace-config.md).
 
@@ -44,7 +44,7 @@ Bound to 127.0.0.1 — command runner is local-only.
 Workspace file  …/workspace.json
 ```
 
-A git clone does **not** check npm for updates and does **not** run `locws upgrade` (use `git pull` and `npm start`). `--help` from a clone lists these npm scripts and `node src/server.mjs --version`, not the locws CLI. `npm start -- --version` (or `-v`) prints the version and does not listen.
+A git clone does **not** check npm for updates. `node src/server.mjs upgrade` errors (`git pull` / `npm start`). A global or `npm link` `locws` bin may run `locws upgrade`. `--help` from a clone lists these npm scripts and `node src/server.mjs --version`, not the locws CLI. `npm start -- --version` (or `-v`) prints the version and does not listen.
 
 ## `npm run start:browser`
 

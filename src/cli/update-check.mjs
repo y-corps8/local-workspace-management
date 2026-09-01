@@ -2,20 +2,21 @@
  * Packaged CLI update check and `locws upgrade`.
  *
  * Notices print to stderr. The browser never sends a shell string — upgrade
- * argv is hardcoded npm install -g @y-corps/locws@latest.
+ * argv is hardcoded npm install -g @y-corps/locws@latest --prefer-online.
  */
 import fs from "node:fs";
 import https from "node:https";
 import path from "node:path";
 import { spawn } from "node:child_process";
-import { resolveSpawnArgv } from "../config/package-manager.mjs";
 import {
   APP_ROOT,
   CLI_NAME,
   NPM_PACKAGE_NAME,
   PACKAGED_INSTALL,
   WORKSPACE_CONFIG_PATH,
+  isLocwsBinInvocation,
 } from "../config/paths.mjs";
+import { preservePackagedUserData } from "./preserve-workspace.mjs";
 
 const REGISTRY_HOST = "registry.npmjs.org";
 const FETCH_TIMEOUT_MS = 3000;
@@ -158,8 +159,40 @@ export async function checkForUpdate({
   return { current, latest };
 }
 
-export function upgradeArgv(platform = process.platform) {
-  return resolveSpawnArgv(["npm", "install", "-g", `${NPM_PACKAGE_NAME}@latest`], platform);
+function pathApi(platform = process.platform) {
+  return platform === "win32" ? path.win32 : path.posix;
+}
+
+/** npm next to this Node when present, else `npm` / `npm.cmd`. */
+export function npmCliPath({
+  platform = process.platform,
+  execPath = process.execPath,
+  existsSync = fs.existsSync,
+} = {}) {
+  const p = pathApi(platform);
+  const name = platform === "win32" ? "npm.cmd" : "npm";
+  const dir = p.dirname(p.normalize(String(execPath || "")));
+  const candidate = dir ? p.join(dir, name) : "";
+  if (candidate && existsSync(candidate)) return candidate;
+  return name;
+}
+
+export function shouldRunUpgrade({
+  packaged = PACKAGED_INSTALL,
+  argv1 = process.argv[1],
+  execPath = process.execPath,
+  platform = process.platform,
+} = {}) {
+  return Boolean(packaged) || isLocwsBinInvocation({ argv1, execPath, platform });
+}
+
+export function upgradeArgv({
+  platform = process.platform,
+  execPath = process.execPath,
+  existsSync = fs.existsSync,
+} = {}) {
+  const npm = npmCliPath({ platform, execPath, existsSync });
+  return [npm, "install", "-g", `${NPM_PACKAGE_NAME}@latest`, "--prefer-online"];
 }
 
 export function cloneUpgradeMessage() {
@@ -170,26 +203,51 @@ export function upgradeSuccessMessage() {
   return `${CLI_NAME} is up to date. Start it with: ${CLI_NAME} start`;
 }
 
+export function upgradeSpawnOptions(platform = process.platform) {
+  const options = { stdio: "inherit" };
+  if (platform === "win32") {
+    options.shell = true;
+    options.windowsHide = true;
+  }
+  return options;
+}
+
+function safePreserve(preserve, log) {
+  try {
+    preserve();
+  } catch (error) {
+    log.error(error.message || error);
+  }
+}
+
 export function runUpgrade({
   packaged = PACKAGED_INSTALL,
+  argv1 = process.argv[1],
+  execPath = process.execPath,
+  existsSync = fs.existsSync,
   spawnFn = spawn,
   platform = process.platform,
   log = console,
+  preserveFn = preservePackagedUserData,
 } = {}) {
   return new Promise((resolve) => {
-    if (!packaged) {
+    if (!shouldRunUpgrade({ packaged, argv1, execPath, platform })) {
       log.error(cloneUpgradeMessage());
       resolve(1);
       return;
     }
-    const argv = upgradeArgv(platform);
-    const child = spawnFn(argv[0], argv.slice(1), { stdio: "inherit" });
+    safePreserve(preserveFn, log);
+    const argv = upgradeArgv({ platform, execPath, existsSync });
+    const child = spawnFn(argv[0], argv.slice(1), upgradeSpawnOptions(platform));
     child.on("error", (error) => {
       log.error(error.message || error);
       resolve(1);
     });
     child.on("exit", (code) => {
-      if (code === 0) log.log(upgradeSuccessMessage());
+      if (code === 0) {
+        safePreserve(preserveFn, log);
+        log.log(upgradeSuccessMessage());
+      }
       resolve(code ?? 1);
     });
   });

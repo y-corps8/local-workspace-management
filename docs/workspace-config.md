@@ -14,9 +14,9 @@ There is no second config format. Portal setup does not store anything else.
 | Git clone (`npm start`) | `<repo>/workspace.json` (gitignored) |
 | `npx @y-corps/locws` / `npm install -g @y-corps/locws` | `~/.config/locws/workspace.json` (Windows `%APPDATA%\locws\workspace.json`; `$XDG_CONFIG_HOME/locws/workspace.json` if set) |
 
-Startup prints `Workspace file  …` so you can see which path this process is using. Clone and packaged installs do **not** share a file. Copy the JSON yourself if you switch from a checkout to `npx`.
+Startup prints `Workspace file  …` so you can see which path this process is using. Clone and packaged installs do **not** share a file while you `npm start` in a checkout. `locws upgrade` copies `workspace.json` into `~/.config/locws/` **only when that dest file is missing** (same for `last-test-runs.json` → `~/.cache/locws/`). It does not overwrite an existing packaged file and does not clear cache. Pin a version with `npm install -g @y-corps/locws@0.1.1` (package name **`@y-corps/locws`**, not unscoped `locws`). That npm command does not run the copy helper; it also does not delete `~/.config/locws/` or `~/.cache/locws/`. `npm uninstall -g` leaves those user dirs in place.
 
-Override both config and cache: `OVERVIEW_DATA_DIR=/some/folder` → `workspace.json` and `.cache/` under that folder.
+Override both config and cache: `OVERVIEW_DATA_DIR=/some/folder` → `workspace.json` and `.cache/` under that folder (no extra copy on upgrade).
 
 ```bash
 cp workspace.example.json workspace.json

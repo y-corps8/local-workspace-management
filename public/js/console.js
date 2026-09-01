@@ -229,6 +229,135 @@ export function applyLogFilter() {
   });
 }
 
+function visibleLogLines() {
+  return [...(els.logPanel?.querySelectorAll("[data-log-text]") ?? [])].filter((line) => !line.hidden);
+}
+
+function visibleLogText() {
+  return visibleLogLines()
+    .map((line) => line.getAttribute("data-log-text") || "")
+    .join("\n");
+}
+
+function logLineFromBoundary(container, offset, edge) {
+  if (!els.logPanel || container == null) return null;
+  if (container === els.logPanel) {
+    const lines = visibleLogLines();
+    if (!lines.length) return null;
+    if (edge === "start") return lines[Math.min(offset, lines.length - 1)] ?? lines[0];
+    const index = Math.max(0, offset - 1);
+    return lines[Math.min(index, lines.length - 1)];
+  }
+  const el = container.nodeType === 1 ? container : container.parentElement;
+  const line = el?.closest("[data-log-text]");
+  return line && !line.hidden ? line : null;
+}
+
+function lineBodyOffset(line, container, offset, edge) {
+  const full = line.getAttribute("data-log-text") || "";
+  if (!full) return 0;
+  if (container === els.logPanel) return edge === "end" ? full.length : 0;
+  const stamp = line.querySelector(".log-time");
+  if (stamp && (container === stamp || stamp.contains?.(container))) return 0;
+  const textNode = [...line.childNodes].find((node) => node.nodeType === Node.TEXT_NODE);
+  if (!textNode) return edge === "end" ? full.length : 0;
+  if (container === line) {
+    const kids = [...line.childNodes];
+    return offset <= kids.indexOf(textNode) ? 0 : full.length;
+  }
+  if (container !== textNode) return edge === "end" ? full.length : 0;
+  const prefix = stamp && (textNode.textContent || "").startsWith(" ") ? 1 : 0;
+  const index = offset - prefix;
+  return Math.max(0, Math.min(full.length, index));
+}
+
+function selectedLogText() {
+  const selection = window.getSelection();
+  if (!selection || selection.rangeCount === 0 || selection.isCollapsed) return "";
+  const range = selection.getRangeAt(0);
+  const ancestor = range.commonAncestorContainer;
+  if (ancestor !== els.logPanel && !els.logPanel?.contains(ancestor)) return "";
+
+  const lines = visibleLogLines();
+  if (!lines.length) return "";
+  const startLine = logLineFromBoundary(range.startContainer, range.startOffset, "start");
+  const endLine = logLineFromBoundary(range.endContainer, range.endOffset, "end");
+  if (!startLine || !endLine) return "";
+  const startIdx = lines.indexOf(startLine);
+  const endIdx = lines.indexOf(endLine);
+  if (startIdx < 0 || endIdx < 0) return "";
+  const from = Math.min(startIdx, endIdx);
+  const to = Math.max(startIdx, endIdx);
+  const parts = [];
+  for (let i = from; i <= to; i += 1) {
+    const line = lines[i];
+    const full = line.getAttribute("data-log-text") || "";
+    if (i === from && i === to) {
+      const a = lineBodyOffset(line, range.startContainer, range.startOffset, "start");
+      const b = lineBodyOffset(line, range.endContainer, range.endOffset, "end");
+      parts.push(full.slice(Math.min(a, b), Math.max(a, b)));
+    } else if (i === from) {
+      parts.push(full.slice(lineBodyOffset(line, range.startContainer, range.startOffset, "start")));
+    } else if (i === to) {
+      parts.push(full.slice(0, lineBodyOffset(line, range.endContainer, range.endOffset, "end")));
+    } else {
+      parts.push(full);
+    }
+  }
+  return parts.join("\n");
+}
+
+async function copyText(text) {
+  const value = String(text ?? "");
+  try {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(value);
+      return true;
+    }
+  } catch {
+    // fall through to execCommand
+  }
+  const field = document.createElement("textarea");
+  field.value = value;
+  field.setAttribute("readonly", "");
+  field.style.position = "fixed";
+  field.style.left = "-9999px";
+  document.body.appendChild(field);
+  field.select();
+  let ok = false;
+  try {
+    ok = document.execCommand("copy");
+  } catch {
+    ok = false;
+  }
+  field.remove();
+  return ok;
+}
+
+const COPY_ALL_LABEL = "Copy all";
+let copyAllResetTimer = 0;
+
+function flashCopyAll(ok) {
+  if (!els.logCopyAll || !ok) return;
+  els.logCopyAll.textContent = "Copied";
+  if (copyAllResetTimer) window.clearTimeout(copyAllResetTimer);
+  copyAllResetTimer = window.setTimeout(() => {
+    copyAllResetTimer = 0;
+    if (els.logCopyAll) els.logCopyAll.textContent = COPY_ALL_LABEL;
+  }, 1500);
+}
+
+function onLogPanelCopy(event) {
+  const selection = window.getSelection();
+  if (!selection || selection.rangeCount === 0 || selection.isCollapsed) return;
+  const node = selection.anchorNode;
+  if (!node || !els.logPanel) return;
+  const el = node.nodeType === 1 ? node : node.parentElement;
+  if (!el || (el !== els.logPanel && !els.logPanel.contains(el))) return;
+  event.preventDefault();
+  event.clipboardData?.setData("text/plain", selectedLogText());
+}
+
 function logLineClass(stream, text) {
   if (stream === "stderr") return "log-line-error";
   const line = String(text);
@@ -495,6 +624,14 @@ export function bindConsole() {
       await postJson("/api/logs/clear", { id: state.selectedJobId }, { quiet: true });
     }
   });
+
+  els.logCopyAll?.addEventListener("click", async () => {
+    const ok = await copyText(visibleLogText());
+    flashCopyAll(ok);
+  });
+
+  els.logPanel.addEventListener("copy", onLogPanelCopy);
+  document.addEventListener("copy", onLogPanelCopy);
 
   els.logFilter?.addEventListener("input", () => {
     applyLogFilter();

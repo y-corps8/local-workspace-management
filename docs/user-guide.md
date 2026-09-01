@@ -15,7 +15,7 @@ Copy the address it prints (`http://127.0.0.1:4174`) into a browser. If that por
 
 - Same app in a new browser tab: `locws start --browser`
 - Its own window: `locws start --window` — closing that window stops the app. Needs the OS WebView tools (macOS `swiftc`, Linux WebKitGTK, Windows WebView2 + `csc`); a browser tab works without them. Install commands: [npm scripts](npm-scripts.md).
-- Upgrade a global install: `locws upgrade`
+- Upgrade a global install: `locws upgrade` (latest). Pin: `npm install -g @y-corps/locws@<version>`.
 
 From a git clone of this repo, `npm start` / `start:browser` / `start:window` are the same server. Details: [npm scripts](npm-scripts.md).
 
@@ -88,7 +88,7 @@ Red buttons ask you to confirm first: **Cancel** or **Run**.
 
 Click the Console chevron to expand it (`Ctrl` or `⌘` + `J`). Drag the handle above Console to resize — height follows only while you hold the pointer; it stays put when you release. While it is open, **Filter logs** is on the title row (kept in this browser until you clear it). Collapsing Console pauses painting (commands keep running); expand reloads the current job’s log. While collapsed, the title row shows which command is running (`Project · command`, plus **+ N more** and **waiting** if a prompt is up). **Stop all** stays hidden until you expand.
 
-Each run gets a tab (`Project · command`). Switch tabs to change which log you are reading. **Clear** clears the current log. Close a tab with **×**.
+Each run gets a tab (`Project · command`). Switch tabs to change which log you are reading. **Copy all** copies the visible log (no timestamps; a filter omits hidden lines). Drag-select a range and copy with `Ctrl` / `⌘` + `C`. **Clear** clears the current log. Close a tab with **×**.
 
 If a command asks a question (Yes / No, a choice, or Press Enter), answer on the overlay over the log. Those buttons are not on the toolbar. There is no box to type into.
 

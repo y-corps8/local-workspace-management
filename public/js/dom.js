@@ -28,6 +28,7 @@ export const els = {
   logCollapse: document.getElementById("log-collapse"),
   logSummary: document.getElementById("log-summary"),
   logClear: document.getElementById("log-clear"),
+  logCopyAll: document.getElementById("log-copy-all"),
   logToolbar: document.getElementById("log-toolbar"),
   logInteractions: document.getElementById("log-interactions"),
   logFilter: document.getElementById("log-filter"),
